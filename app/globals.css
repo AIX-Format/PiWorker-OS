@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --carbon-black: #080808;
+  --cyber-neon-green: #39FF14;
+  --deep-sea-teal: #008080;
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --neon-glow: 0 0 15px rgba(57, 255, 20, 0.4);
+}
+
+body {
+  background-color: var(--carbon-black);
+  color: #ffffff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* Quantum Cyberpunk Utilities */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+
+.neon-text {
+  color: var(--cyber-neon-green);
+  text-shadow: var(--neon-glow);
+}
+
+.neon-border {
+  border: 1px solid var(--cyber-neon-green);
+  box-shadow: var(--neon-glow);
+}
+
+.teal-interaction {
+  color: var(--deep-sea-teal);
+  transition: all 0.3s ease;
+}
+
+.teal-interaction:hover {
+  color: var(--cyber-neon-green);
+  text-shadow: var(--neon-glow);
+}
+
+/* Tech Grid Background */
+.tech-grid {
+  background-image: 
+    linear-gradient(rgba(57, 255, 20, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(57, 255, 20, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--carbon-black);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--deep-sea-teal);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--cyber-neon-green);
+}
