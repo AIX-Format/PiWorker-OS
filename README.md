@@ -62,6 +62,11 @@
   <text x="400" y="265" text-anchor="middle" fill="#39FF14" font-size="12" class="subtitle" letter-spacing="4">SOVEREIGN AGENT ECONOMY // MAS-ZERO</text>
 </svg>
 
+<div align="center">
+  <img src="/Users/cryptojoker710/.gemini/antigravity/brain/8f99b79c-bf4c-41b7-b9c3-002150260add/piworker_hero_banner_1776968532897.png" width="100%" alt="PiWorker-OS Hero Banner"/>
+</div>
+
+
 <!-- Badges -->
 <p>
   <img src="https://img.shields.io/badge/Status-Alpha%20Sovereign-39FF14?style=flat-square&logo=statuspage&logoColor=black" alt="Status"/>
@@ -134,10 +139,15 @@ You  →  Goal  →  🧬 Agent Swarm  →  💰 Revenue
 
 ## 🏛️ Architecture (MAS-ZERO Core)
 
+<div align="center">
+  <img src="/Users/cryptojoker710/.gemini/antigravity/brain/8f99b79c-bf4c-41b7-b9c3-002150260add/piworker_golden_trio_1776968554550.png" width="80%" alt="The Golden Trio Architecture"/>
+</div>
+
+
 ```mermaid
 graph TB
     subgraph User["👤 User Sovereignty Layer"]
-        UI[Venture Lab Dashboard]
+        UI[Amrikyy Lab Sovereign Command Center]
         Logo[Quantum Logo Assets]
     end
 
@@ -200,11 +210,20 @@ npm run dev
 ```
 
 ### Dashboard Access
-Open `http://localhost:3000` to access the **Venture Lab Dashboard**.
+Open `http://localhost:3000` to access the **Amrikyy Lab Sovereign Command Center**.
+
+---
+**Amrikyy Lab :: PiWorker-OS v1.2.0-Sovereign**
+
 
 ---
 
 ## 💰 The Profit Engine (Vortex)
+
+<div align="center">
+  <img src="/Users/cryptojoker710/.gemini/antigravity/brain/8f99b79c-bf4c-41b7-b9c3-002150260add/piworker_profit_vortex_art_1776968585454.png" width="80%" alt="The Profit Vortex"/>
+</div>
+
 
 PiWorker doesn't just execute tasks — it measures ROI in real-time.
 

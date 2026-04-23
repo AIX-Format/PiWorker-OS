@@ -3,7 +3,7 @@ import mesop.components.text as text
 import mesop.components.box as box
 import random
 
-# PiWorker-OS Venture Lab Dashboard
+# PiWorker-OS Amrikyy Lab Dashboard
 # Style: Quantum Cyberpunk
 # Logic: Real-time telemetry visualization for the Profit Vortex
 
@@ -33,7 +33,7 @@ def dashboard():
     )):
         # Header
         with box.box(style=me.Style(display="flex", justify_content="space-between", margin=me.Margin(bottom=40))):
-            me.text("VENTURE LAB // PROFIT VORTEX", type=me.Typography.H4, style=me.Style(color="#39FF14", font_weight="bold", letter_spacing="2px"))
+            me.text("AMRIKYY LAB // PROFIT VORTEX", type=me.Typography.H4, style=me.Style(color="#39FF14", font_weight="bold", letter_spacing="2px"))
             me.text("STATUS: SOVEREIGN", style=me.Style(color="#008080", font_size="12px", border="1px solid #008080", padding=me.Padding.all(4)))
 
         # Stats Grid

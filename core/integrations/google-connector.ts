@@ -1,46 +1,45 @@
+import { SovereignSigner } from "../identity/sovereign-signer";
+
 /**
- * Google Ecosystem Bridge (Connector)
- * Handles authentication and orchestration for Google Cloud / Gemini services.
+ * Google Ecosystem Bridge - Secure Skill Execution
+ * Ensures all Google Cloud/Gemini requests are signed by a sovereign agent.
  */
 export class GoogleConnector {
-  private static instance: GoogleConnector;
-  
-  private constructor() {}
+  /**
+   * Executes a Google Skill (Gemini/Drive) after verifying the agent's signature.
+   */
+  static async executeSecureSkill(params: {
+    agentDID: string;
+    publicKey: string;
+    signedRequest: any; // The Sovereign Envelope
+    skill: "gemini-pro" | "drive-api";
+    action: string;
+    data: any;
+  }) {
+    const { agentDID, publicKey, signedRequest, skill, action, data } = params;
 
-  static getInstance(): GoogleConnector {
-    if (!GoogleConnector.instance) {
-      GoogleConnector.instance = new GoogleConnector();
+    // 1. Verify Sovereign Signature (AIP Logic)
+    const isValid = SovereignSigner.verifyAction(signedRequest, publicKey);
+    if (!isValid) {
+      throw new Error(`[SECURITY_BREACH] Agent ${agentDID} signature validation failed.`);
     }
-    return GoogleConnector.instance;
-  }
 
-  /**
-   * Initializes OAuth flow for a specific agent.
-   * Allows the agent to act as a "Nervous System" for Google Workspace.
-   */
-  async authorizeAgent(agentId: string, scopes: string[]) {
-    console.log(`[GoogleConnector] Initializing OAuth flow for agent ${agentId} with scopes: ${scopes.join(", ")}`);
-    // Implementation for OAuth token exchange would go here
-    return { status: "pending_authorization", authUrl: "https://accounts.google.com/o/oauth2/auth..." };
-  }
+    // 2. Validate Capability Attenuation (Ensure the agent has permission for this skill)
+    if (signedRequest.capability_overlay?.scope === "restricted" && skill === "drive-api") {
+      throw new Error(`[PERMISSION_DENIED] Skill ${skill} is restricted for this signature.`);
+    }
 
-  /**
-   * Gemini Pro / Flash API Bridge
-   * Agents use this to perform advanced reasoning tasks.
-   */
-  async callGemini(prompt: string, model: "pro" | "flash" = "flash") {
-    console.log(`[GoogleConnector] Routing prompt to Gemini ${model}...`);
-    // Actual API call to Google AI SDK
-    return { response: "Simulated Gemini Response", agentSignatureRequired: true };
-  }
-
-  /**
-   * Google Workspace Skill Adapter
-   * Example: Create a Doc or read a Sheet.
-   */
-  async executeWorkspaceAction(action: "create_doc" | "update_sheet", payload: any) {
-    console.log(`[GoogleConnector] Executing Workspace action: ${action}`);
-    // Google APIs implementation
-    return { success: true, fileId: "mock-google-file-id" };
+    // 3. Execution (Mocking actual Google SDK call for now)
+    console.log(`[GOOGLE_BRIDGE] Executing ${skill}:${action} for Agent ${agentDID}`);
+    
+    // In production: Use official google-auth-library and @google/generative-ai
+    return {
+      status: "success",
+      agent_signature: signedRequest.signature,
+      result: skill === "gemini-pro" 
+        ? `Sovereign response for ${action}` 
+        : `Drive operation ${action} completed`,
+      timestamp: Date.now()
+    };
   }
 }
