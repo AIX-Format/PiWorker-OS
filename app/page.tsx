@@ -372,6 +372,40 @@ export default function SovereignCommandCenter() {
           v1.2.0-Sovereign
         </div>
       </footer>
+
+      {/* Floating Economy Feed */}
+      <div className="fixed top-24 right-8 w-64 z-30 pointer-events-none">
+        <AnimatePresence>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col gap-2"
+          >
+            <div className="bg-black/80 border border-pi-gold/30 p-3 rounded-lg backdrop-blur-md">
+              <h4 className="text-[10px] font-black text-pi-gold uppercase mb-2 flex items-center gap-2">
+                <Zap size={12} /> Live Economy Stream
+              </h4>
+              <div className="flex flex-col gap-2">
+                {[
+                  { text: "Agent Hunter found Bounty #92", type: "scan" },
+                  { text: "Gemini Valued at 5.2 Pi", type: "value" },
+                  { text: "Signed & Delivered: pkg-8a2", type: "seal" }
+                ].map((item, i) => (
+                  <motion.div 
+                    key={i}
+                    initial={{ opacity: 0, x: 10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.5 }}
+                    className="text-[9px] font-mono text-white/60 flex items-center gap-2"
+                  >
+                    <span className="text-neon-green">>></span> {item.text}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </main>
   );
 }
