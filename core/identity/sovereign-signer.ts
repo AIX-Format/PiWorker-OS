@@ -1,54 +1,60 @@
 import crypto from "node:crypto";
-import { TaskSignature } from "../types/task";
 
 /**
- * Sovereign Signer Protocol
- * Handles the digital signing of every agent action and task output.
+ * Sovereign Signer (Refined) - Task Signature Protocol
+ * Implements Invocation-Bound Capability Tokens (IBCT) logic from AIP.
  */
 export class SovereignSigner {
   /**
-   * Signs a data payload with the agent's private key.
-   * Produces a verifiable cryptographic stamp.
+   * Generates a Sovereign Task Signature Envelope.
+   * Wraps identity, capability attenuation, and trust metrics.
    */
-  static signAction(agentId: string, privateKey: string, data: any): TaskSignature {
+  static signAction(params: {
+    agentDID: string;
+    privateKey: string;
+    payload: any;
+    capabilityOverlay?: any;
+    trustScore: number;
+    attestationHash: string;
+  }) {
+    const { agentDID, privateKey, payload, capabilityOverlay, trustScore, attestationHash } = params;
     const timestamp = Date.now();
-    const payload = JSON.stringify({ agentId, data, timestamp });
     
-    // Generate work hash (the "fingerprint" of the work)
-    const taskHash = crypto.createHash("sha256").update(payload).digest("hex");
-    
-    // Sign the hash
-    const signature = crypto.sign(null, Buffer.from(taskHash), privateKey).toString("hex");
-
-    return {
-      agentId,
-      taskHash,
+    // 1. Prepare Claim Bundle
+    const claimBundle = {
+      agent_did: agentDID,
+      task_hash: crypto.createHash("sha256").update(JSON.stringify(payload)).digest("hex"),
       timestamp,
-      signature
+      capability_overlay: capabilityOverlay || { scope: "standard" },
+      trust_score: trustScore,
+      attestation_hash: attestationHash,
+      delegation_chain: []
+    };
+
+    // 2. Generate Threshold-Ready Signature (Simplified for Clean Room)
+    const bundleString = JSON.stringify(claimBundle);
+    const signature = crypto.sign(null, Buffer.from(bundleString), privateKey).toString("hex");
+
+    // 3. Return the Sovereign Envelope (IBCT Pattern)
+    return {
+      ...claimBundle,
+      signature,
+      v: "1.0"
     };
   }
 
   /**
-   * Verifies if a signature is valid for a given payload and public key.
+   * Verifies a Sovereign Task Signature.
    */
-  static verifyAction(signature: string, taskHash: string, publicKey: string): boolean {
+  static verifyAction(envelope: any, publicKey: string): boolean {
+    const { signature, ...claimBundle } = envelope;
+    const bundleString = JSON.stringify(claimBundle);
+    
     return crypto.verify(
       null,
-      Buffer.from(taskHash),
+      Buffer.from(bundleString),
       publicKey,
       Buffer.from(signature, "hex")
     );
-  }
-
-  /**
-   * Generates a metadata object for the .signature.json file.
-   */
-  static generateSignatureMetadata(stamp: TaskSignature) {
-    return {
-      version: "1.0.0",
-      protocol: "MAS-ZERO-SOVEREIGN",
-      ...stamp,
-      verified: true
-    };
   }
 }
