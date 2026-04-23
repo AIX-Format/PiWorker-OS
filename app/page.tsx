@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { usePi } from "./components/pi-provider";
 import { authenticateSovereignWallet } from "@/core/finance/pi-auth";
 import { SovereignAuditLog } from "./components/visualizers/sovereign-audit-log";
-import { BrainCircuit, Activity } from "lucide-react";
+import { BrainCircuit, Activity, Boxes, Network } from "lucide-react";
 
 export default function SovereignCommandCenter() {
   const [logs, setLogs] = useState<string[]>([
@@ -181,6 +181,43 @@ export default function SovereignCommandCenter() {
           {/* Audit Ledger Section */}
           <div className="mt-4">
             <SovereignAuditLog />
+          </div>
+
+          {/* Fleet Status Section */}
+          <div className="mt-6 flex flex-col gap-3">
+            <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
+              <Network size={14} className="text-neon-green" /> Micro-SaaS Fleet Status
+            </h2>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="p-2 border border-white/5 bg-white/5 rounded text-center">
+                <div className="text-[14px] font-black text-neon-green">14</div>
+                <div className="text-[8px] text-white/40 uppercase">Active Pods</div>
+              </div>
+              <div className="p-2 border border-white/5 bg-white/5 rounded text-center">
+                <div className="text-[14px] font-black text-pi-gold">92%</div>
+                <div className="text-[8px] text-white/40 uppercase">Fleet Health</div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              {[
+                { name: "Code Pod Alpha", load: 78 },
+                { name: "Audit Pod Beta", load: 45 },
+                { name: "Content Pod Gamma", load: 12 },
+              ].map((pod, i) => (
+                <div key={i} className="flex flex-col gap-1">
+                  <div className="flex justify-between text-[8px] uppercase font-bold">
+                    <span>{pod.name}</span>
+                    <span className="text-neon-green">{pod.load}%</span>
+                  </div>
+                  <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                    <motion.div 
+                      animate={{ width: `${pod.load}%` }}
+                      className="h-full bg-neon-green"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </aside>
 
