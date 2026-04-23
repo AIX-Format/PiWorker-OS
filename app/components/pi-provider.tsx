@@ -3,49 +3,36 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import Script from "next/script";
 
-interface PiUser {
-  username: string;
-  uid: string;
-}
-
 interface PiContextType {
-  piLoaded: boolean;
-  user: PiUser | null;
-  setUser: (user: PiUser | null) => void;
+  isInitialized: boolean;
+  error: string | null;
 }
 
 const PiContext = createContext<PiContextType | undefined>(undefined);
 
 export const PiProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [piLoaded, setPiLoaded] = useState(false);
-  const [user, setUser] = useState<PiUser | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    // Check if Pi is already in window (e.g. script loaded faster or cached)
-    if ((window as any).Pi) {
-      setPiLoaded(true);
-      initializePi();
-    }
-  }, []);
-
-  const initializePi = () => {
+  const initPi = () => {
     try {
-      window.Pi.init({ version: "2.0", sandbox: true });
-      console.log("MAS-ZERO: Pi SDK Initialized (Sandbox Mode)");
-    } catch (error) {
-      console.error("MAS-ZERO: Pi SDK Initialization Failed", error);
+      if (typeof window !== "undefined" && (window as any).Pi) {
+        (window as any).Pi.init({ version: "2.0", sandbox: true });
+        setIsInitialized(true);
+        console.log("%c[PI_SDK] Sovereign Initialization Complete (Sandbox Mode)", "color: #39FF14; font-weight: bold;");
+      }
+    } catch (err: any) {
+      setError(err.message);
+      console.error("[PI_SDK] Initialization Failed:", err);
     }
   };
 
   return (
-    <PiContext.Provider value={{ piLoaded, user, setUser }}>
+    <PiContext.Provider value={{ isInitialized, error }}>
       <Script
         src="https://sdk.minepi.com/pi-sdk.js"
-        strategy="afterInteractive"
-        onLoad={() => {
-          setPiLoaded(true);
-          initializePi();
-        }}
+        onLoad={initPi}
+        onError={() => setError("Failed to load Pi SDK script")}
       />
       {children}
     </PiContext.Provider>

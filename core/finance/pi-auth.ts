@@ -1,50 +1,48 @@
 /**
- * MAS-ZERO FINANCE CORE: Sovereign Wallet Authentication
- * Clean Room Protocol: Encapsulated logic for Pi Network Sovereign Authentication.
+ * AMRIKYY LAB :: SOVEREIGN FINANCE
+ * Pi Network Authentication Kernel
  */
 
-export interface SovereignAuthResult {
+export interface PiUser {
+  uid: string;
+  username: string;
   accessToken: string;
-  user: {
-    uid: string;
-    username: string;
-  };
 }
 
 /**
- * Authenticates the Sovereign Wallet via Pi SDK.
- * Handles graceful degradation if not inside Pi Browser.
+ * Initiates the sovereign wallet authentication flow.
+ * Scopes: payments, username
  */
-export async function authenticateSovereignWallet(): Promise<SovereignAuthResult | null> {
-  if (typeof window === "undefined" || !window.Pi) {
-    console.warn("MAS-ZERO: Pi SDK not found. Authentication aborted.");
-    return null;
-  }
+export async function authenticateSovereignWallet(): Promise<PiUser> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !(window as any).Pi) {
+      reject(new Error("Pi SDK not loaded. Ensure you are in the Pi Browser or Sandbox."));
+      return;
+    }
 
-  try {
-    const scopes = ["payments", "username"];
-    
-    // onIncompletePaymentFound is required for Pi SDK v2
-    const onIncompletePaymentFound = (payment: any) => {
-      console.warn("MAS-ZERO: Incomplete payment found:", payment);
-    };
+    const Pi = (window as any).Pi;
 
-    const auth = await window.Pi.authenticate(scopes, onIncompletePaymentFound);
-    
-    console.log("MAS-ZERO: Sovereign Wallet Authenticated Success");
-    
-    // Security Protocol: Access tokens are handled in memory.
-    // Encrypting or passing to Sidecar would happen here or in the caller.
-    
-    return {
-      accessToken: auth.accessToken,
-      user: {
-        uid: auth.user.uid,
-        username: auth.user.username,
-      },
-    };
-  } catch (error: any) {
-    console.error("MAS-ZERO: Pi Authentication Failed", error);
-    return null;
-  }
+    Pi.authenticate(['payments', 'username'], onIncompletePaymentFound)
+      .then((auth: any) => {
+        // AMRIKYY_SECURITY: We return the user data for in-memory processing.
+        // DO NOT store the accessToken in plain text.
+        resolve({
+          uid: auth.user.uid,
+          username: auth.user.username,
+          accessToken: auth.accessToken
+        });
+      })
+      .catch((err: any) => {
+        console.error("[PI_AUTH] Sovereign Failure:", err);
+        reject(err);
+      });
+  });
+}
+
+/**
+ * Handle incomplete payments to ensure financial integrity.
+ */
+function onIncompletePaymentFound(payment: any) {
+  console.warn("[PI_FINANCE] Incomplete payment detected for tx:", payment.identifier);
+  // Future implementation: Resolve via backend check.
 }

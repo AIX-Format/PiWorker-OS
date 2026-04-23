@@ -16,20 +16,27 @@ export default function SovereignCommandCenter() {
     "System Status: SOVEREIGN",
   ]);
 
-  const { piLoaded, user, setUser } = usePi();
+  const { isInitialized } = usePi();
+  const [user, setUser] = useState<{username: string, uid: string} | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [liquidity, setLiquidity] = useState(295);
 
   const handleConnectWallet = async () => {
-    setIsAuthenticating(true);
-    const result = await authenticateSovereignWallet();
-    if (result) {
-      setUser({ username: result.user.username, uid: result.user.uid });
-      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> SOVEREIGN_VAULT_CONNECTED: User ${result.user.username} authenticated.`]);
-    } else {
-      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> AUTH_FAILED: Secure connection could not be established.`]);
+    if (!isInitialized) {
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> SYSTEM_ERROR: Pi SDK not ready.`]);
+      return;
     }
-    setIsAuthenticating(false);
+    
+    setIsAuthenticating(true);
+    try {
+      const result = await authenticateSovereignWallet();
+      setUser({ username: result.username, uid: result.uid });
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> SOVEREIGN_VAULT_CONNECTED: User ${result.username} authenticated.`]);
+    } catch (error) {
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> AUTH_FAILED: Secure connection could not be established.`]);
+    } finally {
+      setIsAuthenticating(false);
+    }
   };
 
   // Simulate incoming logs
