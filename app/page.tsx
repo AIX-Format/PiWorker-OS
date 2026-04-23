@@ -61,8 +61,9 @@ export default function SovereignCommandCenter() {
   }, []);
 
   return (
-    <main className="h-screen w-screen bg-sovereign-black text-white overflow-hidden flex flex-col font-mono relative">
-      <div className="scanline" />
+    <>
+      <main className="h-screen w-screen bg-sovereign-black text-white overflow-hidden flex flex-col font-mono relative">
+        <div className="scanline" />
       
       {/* Top Header */}
       <header className="h-20 border-b border-white/5 flex items-center justify-between px-8 frosted-glass z-20">
@@ -276,6 +277,8 @@ export default function SovereignCommandCenter() {
               className="bg-transparent border-none outline-none text-neon-green flex-1 placeholder:text-white/10"
             />
           </div>
+        </section>
+
         {/* Right Sidebar: Global Intelligence & Bounties */}
         <aside className="w-80 border-l border-white/5 p-6 flex flex-col gap-6 frosted-glass">
           <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
@@ -443,6 +446,7 @@ export default function SovereignCommandCenter() {
           </motion.div>
         </AnimatePresence>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

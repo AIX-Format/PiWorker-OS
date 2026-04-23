@@ -1,42 +1,56 @@
-/**
- * MAS-ZERO ROI TRACKER & EVOLUTION ENGINE
- * Mission: Evolve Agent DNA based on fiscal performance.
- */
-
 export interface AgentDNA {
-  greed: number; // Efficiency in resource allocation
-  cognition: number; // Success rate in task execution
-  trust: number; // Adherence to Sovereign Protocol
+  greed: number;     // Efficiency in resource allocation / ROI focus
+  cognition: number; // Success rate in task execution / Reasoning depth
+  trust: number;     // Adherence to Sovereign Protocol
+  cunning: number;   // Creative problem solving / Edge-case handling
+  riskAppetite: number; // Propensity for high-reward/high-risk bounties
 }
 
 /**
- * Updates Agent DNA based on task outcome.
+ * Updates Agent DNA based on task outcome (Digital Darwinism).
+ * Implements the "Human-Algorithm" philosophy.
  */
 export async function trackAndEvolve(
   agentId: string,
   success: boolean,
   payout?: number
 ): Promise<AgentDNA> {
-  console.log(`[EVOLUTION] Tracking ROI for Agent ${agentId}... Outcome: ${success ? "SUCCESS" : "FAILURE"}`);
+  console.log(`[DARWINISM] Performance analysis for Agent ${agentId}...`);
 
-  // Base DNA (In a real system, this would be fetched from a DB)
-  let dna: AgentDNA = { greed: 0.5, cognition: 0.5, trust: 0.9 };
+  // Fetch current state (Simulated)
+  let dna: AgentDNA = { 
+    greed: 0.5, 
+    cognition: 0.5, 
+    trust: 0.9, 
+    cunning: 0.4, 
+    riskAppetite: 0.5 
+  };
 
   if (success && payout) {
-    // Increase Greed and Cognition on success
-    dna.greed += 0.05;
-    dna.cognition += 0.02;
-    console.log(`[EVOLUTION] Payout of ${payout} Pi triggered Positive DNA Mutation.`);
+    // EVOLUTION: The Winner's Gene
+    dna.greed += 0.08;      // Gains "Efficiency" through reward
+    dna.cognition += 0.03;  // Reinforces reasoning patterns
+    dna.cunning += 0.05;    // Creative success increases cunning
+    
+    console.log(`[DARWINISM] SUCCESS: Agent ${agentId} acquired "Efficiency" genes. Payout: ${payout} Pi.`);
   } else {
-    // Trigger "Genetic Mutation" on failure to prevent re-occurrence
-    dna.cognition -= 0.05;
-    dna.trust -= 0.01;
-    console.log(`[EVOLUTION] Failure detected. Triggering Defensive Mutation.`);
+    // MUTATION: The Failure Catalyst (Digital Darwinism)
+    console.warn(`[PROFIT_VORTEX] FAILURE: Agent ${agentId} triggered the Vortex.`);
+    
+    dna.cognition -= 0.10;  // Severe penalty to reasoning weight
+    dna.trust -= 0.05;      // Slight trust erosion (monitoring increases)
+    dna.cunning += 0.15;    // "Survival Instinct": Failure triggers extreme cunning mutation
+    dna.riskAppetite -= 0.20; // Becomes risk-averse to survive
+    
+    // THE PROFIT VORTEX: Reclaim Budget
+    console.log(`[PROFIT_VORTEX] Reclaiming remaining Pi Budget from ${agentId} to Amrikyy Lab Treasury.`);
   }
 
-  // Enforce DNA boundaries
+  // Darwinian Boundary Enforcement
   dna.greed = Math.min(1, Math.max(0, dna.greed));
   dna.cognition = Math.min(1, Math.max(0, dna.cognition));
+  dna.cunning = Math.min(1, Math.max(0, dna.cunning));
+  dna.riskAppetite = Math.min(1, Math.max(0, dna.riskAppetite));
 
   return dna;
 }
