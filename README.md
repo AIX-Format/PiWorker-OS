@@ -63,7 +63,7 @@
 </svg>
 
 <div align="center">
-  <img src="/Users/cryptojoker710/.gemini/antigravity/brain/8f99b79c-bf4c-41b7-b9c3-002150260add/piworker_hero_banner_1776968532897.png" width="100%" alt="PiWorker-OS Hero Banner"/>
+  <img src="https://raw.githubusercontent.com/Moeabdelaziz007/PiWorker-OS/main/public/branding/hero-banner.png" width="100%" alt="PiWorker-OS Hero Banner" onerror="this.src='/Users/cryptojoker710/.gemini/antigravity/brain/8f99b79c-bf4c-41b7-b9c3-002150260add/piworker_hero_banner_1776968532897.png'"/>
 </div>
 
 
@@ -254,14 +254,24 @@ export const AgentSchema = z.object({
 
 ---
 
-## 🤝 Community & Architect
+---
 
-- **Architect:** [Moeabdelaziz007](https://github.com/Moeabdelaziz007)
-- **Manifesto:** Clean Room Protocol v2.0
-- **Vision:** Autonomous Holding Protocol (AHP)
+## 🏛️ Architect & Sovereign Governance
+
+<div align="center">
+  <img src="https://github.com/Moeabdelaziz007.png" width="120" style="border-radius: 50%; border: 2px solid #39FF14;" alt="Moeabdelaziz007"/>
+  <br/>
+  <h3>Moeabdelaziz007</h3>
+  <p><em>Lead Architect of Amrikyy Lab & Sovereign Governance</em></p>
+  <a href="https://github.com/Moeabdelaziz007">
+    <img src="https://img.shields.io/badge/GitHub-Moeabdelaziz007-39FF14?style=for-the-badge&logo=github&logoColor=black" alt="GitHub Profile"/>
+  </a>
+</div>
 
 ---
+
 <div align="center">
   <p><em>"Engineered for Profit. Optimized for Sovereignty."</em></p>
-  <img src="./public/assets/logo.png" width="100" alt="MAS-ZERO Logo"/>
+  <img src="https://raw.githubusercontent.com/Moeabdelaziz007/PiWorker-OS/main/public/assets/logo.png" width="100" alt="MAS-ZERO Logo" onerror="this.style.display='none'"/>
+  <p><strong>Amrikyy Lab :: PiWorker-OS v1.2.0-Sovereign</strong></p>
 </div>
