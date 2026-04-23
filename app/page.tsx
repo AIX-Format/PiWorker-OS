@@ -2,8 +2,10 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { PiLogo } from "@/app/components/ui/pi-logo";
-import { Terminal, Activity, Zap, Cpu, TrendingUp, ShieldAlert } from "lucide-react";
+import { Terminal, Activity, Zap, Cpu, TrendingUp, ShieldAlert, Wallet, Lock, CheckCircle } from "lucide-react";
 import { useState, useEffect } from "react";
+import { usePi } from "./components/pi-provider";
+import { authenticateSovereignWallet } from "@/core/finance/pi-auth";
 
 export default function SovereignCommandCenter() {
   const [logs, setLogs] = useState<string[]>([
@@ -13,6 +15,22 @@ export default function SovereignCommandCenter() {
     "Profit Vortex: STANDBY",
     "System Status: SOVEREIGN",
   ]);
+
+  const { piLoaded, user, setUser } = usePi();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [liquidity, setLiquidity] = useState(295);
+
+  const handleConnectWallet = async () => {
+    setIsAuthenticating(true);
+    const result = await authenticateSovereignWallet();
+    if (result) {
+      setUser({ username: result.user.username, uid: result.user.uid });
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> SOVEREIGN_VAULT_CONNECTED: User ${result.user.username} authenticated.`]);
+    } else {
+      setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> AUTH_FAILED: Secure connection could not be established.`]);
+    }
+    setIsAuthenticating(false);
+  };
 
   // Simulate incoming logs
   useEffect(() => {
@@ -53,12 +71,27 @@ export default function SovereignCommandCenter() {
             <span className="text-neon-green text-sm">THRESHOLD ACTIVE (2/3)</span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[10px] text-white/40 uppercase tracking-widest">Active Citizens</span>
-            <span className="text-neon-green text-sm">1,204</span>
+            <span className="text-[10px] text-white/40 uppercase tracking-widest">Vault Status</span>
+            <span className={user ? "text-pi-gold text-sm" : "text-red-500 text-sm"}>
+              {user ? "CONNECTED" : "LOCKED"}
+            </span>
           </div>
           <div className="h-10 w-[1px] bg-white/10" />
-          <button className="px-4 py-2 bg-neon-green text-black font-black text-xs uppercase tracking-tighter hover:bg-white transition-colors">
-            Authorize Genesis
+          <button 
+            onClick={handleConnectWallet}
+            disabled={!!user || isAuthenticating}
+            className={`px-4 py-2 font-black text-xs uppercase tracking-tighter transition-all flex items-center gap-2 ${
+              user 
+                ? "bg-pi-gold/10 text-pi-gold border border-pi-gold/30" 
+                : "bg-neon-green text-black hover:bg-white"
+            }`}
+          >
+            {isAuthenticating ? "Authenticating..." : user ? (
+              <>
+                <CheckCircle size={14} />
+                {user.username}
+              </>
+            ) : "Authorize Genesis"}
           </button>
         </div>
       </header>
@@ -178,6 +211,48 @@ export default function SovereignCommandCenter() {
           <h2 className="text-xs font-black text-white/40 uppercase tracking-[0.2em] flex items-center gap-2">
             <Activity size={14} className="text-pi-gold" /> Global Intelligence
           </h2>
+
+          {/* Vault Status Panel */}
+          <div className="p-4 border border-pi-gold/20 bg-pi-gold/5 rounded-lg flex flex-col gap-3 relative overflow-hidden group">
+            <div className="absolute -right-4 -top-4 opacity-10 group-hover:opacity-20 transition-opacity">
+              <Wallet size={80} className="text-pi-gold" />
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Lock size={14} className={user ? "text-neon-green" : "text-pi-gold"} />
+                <span className="text-[10px] font-black uppercase tracking-widest text-white">Sovereign Vault</span>
+              </div>
+              {!user && <span className="text-[8px] bg-red-500/20 text-red-500 px-1 font-bold">DISCONNECTED</span>}
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[24px] font-black tracking-tighter text-pi-gold flex items-baseline gap-1">
+                {user ? liquidity : "???"} <span className="text-[12px] opacity-60">Pi</span>
+              </span>
+              <span className="text-[9px] text-white/40 uppercase font-mono">Genesis Liquidity Pool</span>
+            </div>
+
+            {!user ? (
+              <button 
+                onClick={handleConnectWallet}
+                className="w-full py-2 bg-[#F7B733] text-black font-black text-[10px] uppercase tracking-widest hover:bg-[#ffcc33] transition-colors shadow-[0_0_15px_rgba(247,183,51,0.3)]"
+              >
+                Connect Pi Wallet
+              </button>
+            ) : (
+              <div className="flex flex-col gap-2 border-t border-pi-gold/10 pt-2 mt-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-[8px] text-white/40 uppercase">Authenticated As</span>
+                  <span className="text-[9px] text-neon-green font-bold">@{user.username}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[8px] text-white/40 uppercase">Wallet Security</span>
+                  <span className="text-[9px] text-neon-green font-bold">BIOMETRIC_ENFORCED</span>
+                </div>
+              </div>
+            )}
+          </div>
           
           <div className="flex flex-col gap-4">
             {[
