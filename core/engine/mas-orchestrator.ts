@@ -3,6 +3,7 @@ import { Agent, AgentRole } from "../types/agent";
 import { Skill } from "../types/skill";
 import { QuantumMirror, SimulationResult } from "./quantum-mirror";
 import { ProfitVortex, FinancialHealth } from "./profit-vortex";
+import { GemmaAdapter } from "../brain/gemma-adapter";
 
 /**
  * PiWorker-OS MASOrchestrator
@@ -21,11 +22,13 @@ export enum OrchestrationEvent {
 export class MASOrchestrator extends EventEmitter {
   private mirror: QuantumMirror;
   private vortex: ProfitVortex;
+  private brain: GemmaAdapter;
 
   constructor() {
     super();
     this.mirror = new QuantumMirror();
     this.vortex = new ProfitVortex();
+    this.brain = new GemmaAdapter();
   }
 
   /**
@@ -41,6 +44,14 @@ export class MASOrchestrator extends EventEmitter {
     try {
       this.emit(OrchestrationEvent.TASK_INITIATED, { ceo, executor, taskData });
 
+      // 0. مرحلة التفكير الاستراتيجي (Sovereign Brain)
+      console.log(`[Orchestrator] ${ceo.name} is reasoning about the task...`);
+      const strategy = await this.brain.generate(
+        `Develop a sovereign strategy for task: ${JSON.stringify(taskData)} using skill: ${skill.name}`,
+        ceo.role === 'ceo' // Use Gemma 27B if CEO
+      );
+      console.log(`[Strategy] ${strategy}`);
+
       // 1. مرحلة المحاكاة (Quantum Mirror)
       const simResult = await this.mirror.dryRunTask(executor, skill, taskData);
       this.emit(OrchestrationEvent.SIMULATION_PASSED, simResult);
@@ -51,11 +62,24 @@ export class MASOrchestrator extends EventEmitter {
       // 3. مرحلة المراجعة المالية (Profit Vortex)
       const health = await this.vortex.evaluatePerformance(executor, actualRoi, 1000); // ميزانية افتراضية 1000
       
+      // 4. البصمة السيادية (Sovereign Signature)
+      const signedResult = this.signExecutionResult(executor, {
+        actualRoi,
+        health,
+        skill: skill.name,
+        timestamp: Date.now()
+      });
+
       if (health.actionTaken === "cannibalize") {
         this.handleAgentFailure(executor, actualRoi);
       }
 
-      this.emit(OrchestrationEvent.EXECUTION_COMPLETED, { executor, actualRoi, health });
+      this.emit(OrchestrationEvent.EXECUTION_COMPLETED, { 
+        executor, 
+        actualRoi, 
+        health,
+        sovereignStamp: signedResult.stamp 
+      });
 
     } catch (error) {
       if (error instanceof Error && error.name === "BetrayalDetectedError") {
@@ -65,6 +89,31 @@ export class MASOrchestrator extends EventEmitter {
         throw error;
       }
     }
+  }
+
+  /**
+   * توليد الختم السيادي للمخرج التقني
+   */
+  private signExecutionResult(agent: Agent, output: any) {
+    const crypto = require("crypto");
+    const { SignatureProvider } = require("../security/signature-provider");
+    
+    const taskHash = crypto.createHash("sha256").update(JSON.stringify(output)).digest("hex");
+    
+    // In a real system, the privateKey would be securely stored in the Sandbox or Sidecar.
+    // For this simulation, we use a derived key for the demo.
+    const mockPrivateKey = crypto.createHash("sha256").update(agent.id).digest("hex");
+    const signature = crypto.createHmac("sha256", mockPrivateKey).update(taskHash).digest("hex");
+
+    return {
+      output,
+      stamp: {
+        agentId: agent.id,
+        taskHash,
+        timestamp: Date.now(),
+        signature: signature
+      }
+    };
   }
 
   private async simulateExecution(agent: Agent, sim: SimulationResult): Promise<number> {

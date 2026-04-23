@@ -37,10 +37,19 @@ export class ProfitVortex {
       return this.executeCannibalism(agent, actualRoi, currentBudget);
     }
 
-    // إذا كان العائد ممتازاً، يتم تحديث الخزينة بنسبة الأرباح
+    // إذا كان العائد ممتازاً، يتم تحديث الخزينة بنسبة الأرباح وتوزيع المكافأة
     const profit = currentBudget * (actualRoi - 1);
     if (profit > 0) {
-      this.sovereignTreasury += profit * 0.1; // ضريبة سيادية 10%
+      const taxAmount = profit * 0.1; // ضريبة سيادية 10%
+      const rewardAmount = profit - taxAmount;
+      
+      this.sovereignTreasury += taxAmount;
+      
+      // توزيع مكافأة الـ Pi آلياً
+      if (agent.walletAddress) {
+        const { PiAdapter } = require("../finance/pi-adapter");
+        PiAdapter.getInstance().transferRewards(agent.walletAddress, rewardAmount);
+      }
     }
 
     return {
