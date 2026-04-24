@@ -1,0 +1,21 @@
+{
+  "id": "sentiment-oracle",
+  "name": "Global Sentiment Oracle",
+  "version": "1.0.0",
+  "description": "Real-time social sentiment analyzer for predictive market intelligence.",
+  "costPerUse": 4.0,
+  "entryPoint": "index.js",
+  "signature": "SIG_SOVEREIGN_ROOT_0xMOOD",
+  "toolSchema": {
+    "name": "analyze_global_sentiment",
+    "description": "Scans social networks to determine the global mood for specific assets.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "asset": { "type": "string", "description": "Asset to analyze (e.g. 'Pi', 'BTC', 'ETH')." },
+        "timeframe": { "type": "string", "enum": ["1h", "4h", "24h"] }
+      },
+      "required": ["asset"]
+    }
+  }
+}
