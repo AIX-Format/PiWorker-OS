@@ -1,19 +1,39 @@
-/**
- * MAS-ZERO FLEET MANAGER
- * Mission: Monitor, Load-Balance, and Orchestrate the Micro-SaaS Fleet.
- */
-
 import { AgentInstance, AgentSpecialization } from "./agent-spawner";
+import { PersistenceEngine } from "../brain/persistence-engine";
 
 class FleetManager {
   private fleet: Map<string, AgentInstance> = new Map();
 
   /**
-   * Registers an agent into the active fleet tracking system.
+   * Registers an agent and synchronizes state to disk.
    */
-  register(agent: AgentInstance) {
+  async register(agent: AgentInstance) {
     this.fleet.set(agent.agentId, agent);
     console.log(`[FLEET_MANAGER] Tracking Agent: ${agent.agentId} (${agent.specialization})`);
+    await this.syncToDisk();
+  }
+
+  /**
+   * Updates an agent's status and syncs.
+   */
+  async updateStatus(agentId: string, status: "READY" | "BUSY" | "OFFLINE") {
+    const agent = this.fleet.get(agentId);
+    if (agent) {
+      agent.status = status;
+      await this.syncToDisk();
+    }
+  }
+
+  private async syncToDisk() {
+    await PersistenceEngine.saveFleetState(Array.from(this.fleet.values()));
+  }
+
+  /**
+   * Loads the fleet state from disk during initialization.
+   */
+  async initialize() {
+    console.log("[FLEET_MANAGER] Initializing Sovereign Fleet...");
+    // Future: Load from PersistenceEngine.loadFleetState();
   }
 
   /**

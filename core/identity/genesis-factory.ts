@@ -33,6 +33,7 @@ export class GenesisFactory {
     return {
       did: agentDID,
       publicKey,
+      privateKey, // Added for simulation support
       shares: {
         core: shares[0],
         sidecar: shares[1],
@@ -50,6 +51,13 @@ export class GenesisFactory {
         protocol: "AIP-v1"
       }
     };
+  }
+
+  /**
+   * Performs the "Genesis Ceremony" for a new agent (Legacy alias for simulation).
+   */
+  static async mintAgent(agentName: string, dna: any) {
+    return this.spawnAgentIdentity(agentName, dna.role || "BountyHunter");
   }
 
   private static distributeThresholdShares(privateKey: string): string[] {

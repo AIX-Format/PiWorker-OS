@@ -36,7 +36,8 @@ export class SovereignLedger {
     const entryString = JSON.stringify(entry) + "\n";
     const entryHash = crypto.createHash("sha256").update(entryString).digest("hex");
     
-    // Append to file (Air-gapped simulation)
+    // Ensure directory exists and append to file
+    await fs.mkdir(path.dirname(LEDGER_PATH), { recursive: true });
     await fs.appendFile(LEDGER_PATH, entryString);
     
     this.lastHash = entryHash;
