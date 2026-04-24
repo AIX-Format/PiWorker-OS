@@ -1,0 +1,13 @@
+{
+  "id": "openpi-commander",
+  "name": "Robot Pi Commander",
+  "version": "1.0.0",
+  "description": "Physical Intelligence (π0.7) execution bridge for Robot Pi hardware.",
+  "author": "MAS-ZERO (Amrikyy Lab)",
+  "permissions": [
+    "physical_execution",
+    "telemetry_read",
+    "motor_control"
+  ],
+  "tags": ["physical", "robotics", "sovereign-execution"]
+}
