@@ -87,7 +87,7 @@ export class SovereignBridge {
         grpc.credentials.createInsecure(), 
         {
           "grpc.primary_user_agent": "PiWorker-Orchestrator/2.0",
-          "grpc.default_authority": "axiomid.app"
+          "grpc.default_authority": "axiev.org"
         }
       );
       console.log(`[gRPC] Sovereign Bridge secured and connected to ${this.ENGINE_URL}`);
