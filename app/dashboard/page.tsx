@@ -3,91 +3,207 @@
 import React, { useState, useEffect } from 'react';
 
 /**
- * SOVEREIGN DASHBOARD: AMRIKYY LAB
- * UI: Cairo Cyberpunk | Theme: Neon-Gold & Dark Matter
+ * AMRIKYY LAB :: SOVEREIGN DASHBOARD V2
+ * THEME: QUANTUM CYBERPUNK (CARBON & NEON)
+ * STATUS: LIVE DATA SYNC ACTIVE
  */
 export default function SovereignDashboard() {
-  const [metrics, setMetrics] = useState({
-    reserve: 175.0,
-    agents: 1,
-    status: "STABLE",
-    lastPulse: "Initializing..."
-  });
+  const [data, setData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Live Data Polling (Every 5 seconds)
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch('/api/sovereign-state');
+        const json = await res.json();
+        if (json.success) {
+          setData(json);
+        }
+      } catch (err) {
+        console.error("Dashboard sync error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (loading && !data) {
+    return (
+      <div style={{ backgroundColor: '#0a0a0a', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#39FF14' }}>
+        <div style={{ letterSpacing: '5px', fontWeight: 'bold' }}>INITIALIZING QUANTUM BRIDGE...</div>
+      </div>
+    );
+  }
+
+  const treasury = data?.treasury || { reserve: 0, status: "OFFLINE" };
+  const fleet = data?.fleet || { count: 0, active: 0, ready: 0 };
+  const logs = data?.logs || [];
 
   return (
     <div style={{
-      backgroundColor: '#050505',
-      color: '#d4af37',
+      backgroundColor: '#0a0a0a',
+      color: '#ffffff',
       minHeight: '100vh',
-      fontFamily: '"Outfit", sans-serif',
-      padding: '40px',
-      backgroundImage: 'radial-gradient(circle at top right, #1a1a1a, #050505)'
+      fontFamily: '"Outfit", "Inter", sans-serif',
+      padding: '2rem',
+      backgroundImage: 'linear-gradient(135deg, #0a0a0a 0%, #111111 100%)',
+      overflowX: 'hidden'
     }}>
-      {/* Header */}
-      <header style={{ borderBottom: '2px solid #d4af37', paddingBottom: '20px', marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '2.5rem', fontWeight: '900', letterSpacing: '4px' }}>
-          AMRIKYY LAB <span style={{ color: '#00e5ff' }}>SOVEREIGN OS</span>
-        </h1>
-        <p style={{ opacity: 0.7 }}>Level 5 Autonomous Execution Protocol Active</p>
-      </header>
+      
+      {/* Background Carbon Grid Effect */}
+      <div style={{
+        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+        backgroundSize: '30px 30px',
+        backgroundImage: 'linear-gradient(to right, #151515 1px, transparent 1px), linear-gradient(to bottom, #151515 1px, transparent 1px)',
+        zIndex: 0, pointerEvents: 'none'
+      }} />
 
-      {/* Grid Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1400px', margin: '0 auto' }}>
         
-        {/* Treasury Card */}
-        <div style={{
-          background: 'rgba(212, 175, 55, 0.05)',
-          border: '1px solid rgba(212, 175, 55, 0.3)',
-          padding: '30px',
-          borderRadius: '15px',
-          backdropFilter: 'blur(10px)'
+        {/* Header - Apple Minimalist x Cyberpunk */}
+        <header style={{ 
+          display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', 
+          borderBottom: '1px solid #222', paddingBottom: '2rem', marginBottom: '3rem' 
         }}>
-          <h2 style={{ color: '#00e5ff', marginBottom: '20px' }}>FISCAL RESERVE</h2>
-          <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>
-            {metrics.reserve.toFixed(2)} <span style={{ fontSize: '1rem' }}>Pi</span>
+          <div>
+            <h1 style={{ 
+              fontSize: '2.5rem', fontWeight: 800, margin: 0, letterSpacing: '-1px',
+              textShadow: '0 0 20px rgba(57, 255, 20, 0.2)'
+            }}>
+              AMRIKYY<span style={{ color: '#39FF14' }}>LAB</span>
+            </h1>
+            <p style={{ opacity: 0.5, fontSize: '0.9rem', marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '2px' }}>
+              Sovereign Agent Economy OS // Level 5
+            </p>
           </div>
-          <p style={{ marginTop: '10px', color: '#32cd32' }}>Status: {metrics.status}</p>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.7rem', opacity: 0.4, textTransform: 'uppercase' }}>System Heartbeat</div>
+            <div style={{ color: '#39FF14', fontWeight: 'bold' }}>● OPERATIONAL</div>
+          </div>
+        </header>
+
+        {/* Main Metrics Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '1.5rem' }}>
+          
+          {/* Treasury - The Golden Vault */}
+          <div style={{ 
+            gridColumn: 'span 4', background: '#111', border: '1px solid #222', borderRadius: '24px', padding: '2rem',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.5)', transition: 'all 0.3s ease'
+          }}>
+            <div style={{ fontSize: '0.8rem', color: '#F7B733', fontWeight: 700, textTransform: 'uppercase', marginBottom: '1.5rem', letterSpacing: '1px' }}>
+              National Reserve
+            </div>
+            <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#F7B733', lineHeight: 1 }}>
+              {treasury.reserve.toFixed(2)}<span style={{ fontSize: '1.5rem', opacity: 0.5, marginLeft: '0.5rem' }}>π</span>
+            </div>
+            <div style={{ marginTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#39FF14' }} />
+              <span style={{ fontSize: '0.9rem', color: '#39FF14', textTransform: 'uppercase', fontWeight: 600 }}>{treasury.status}</span>
+            </div>
+          </div>
+
+          {/* Fleet Status */}
+          <div style={{ 
+            gridColumn: 'span 4', background: '#111', border: '1px solid #222', borderRadius: '24px', padding: '2rem',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between'
+          }}>
+            <div style={{ fontSize: '0.8rem', color: '#aaa', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>
+              Agent Fleet
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '1rem' }}>
+              <div style={{ fontSize: '4.5rem', fontWeight: 900, color: '#ffffff' }}>{fleet.count}</div>
+              <div style={{ fontSize: '1.2rem', opacity: 0.5 }}>Units Active</div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
+              <div style={{ flex: 1, background: '#181818', padding: '0.75rem', borderRadius: '12px', border: '1px solid #222' }}>
+                <div style={{ fontSize: '0.6rem', opacity: 0.5 }}>ACTIVE</div>
+                <div style={{ fontWeight: 'bold', color: '#39FF14' }}>{fleet.active}</div>
+              </div>
+              <div style={{ flex: 1, background: '#181818', padding: '0.75rem', borderRadius: '12px', border: '1px solid #222' }}>
+                <div style={{ fontSize: '0.6rem', opacity: 0.5 }}>READY</div>
+                <div style={{ fontWeight: 'bold' }}>{fleet.ready}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Neural Terminal Feed */}
+          <div style={{ 
+            gridColumn: 'span 4', background: '#070707', border: '1px solid #333', borderRadius: '24px', padding: '1.5rem',
+            fontFamily: '"JetBrains Mono", "Fira Code", monospace', fontSize: '0.8rem', position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: '#39FF14', boxShadow: '0 0 10px #39FF14' }} />
+            <div style={{ marginBottom: '1rem', color: '#39FF14', fontSize: '0.7rem', fontWeight: 'bold' }}>NEURAL_TERMINAL_FEED v1.0</div>
+            <div style={{ color: '#555', lineHeight: '1.6' }}>
+              {logs.length === 0 ? (
+                <div>> Waiting for neural pulse...</div>
+              ) : logs.map((log: any, i: number) => (
+                <div key={log.id} style={{ marginBottom: '0.5rem', borderLeft: '1px solid #222', paddingLeft: '0.5rem' }}>
+                  <span style={{ color: '#333' }}>[{new Date(log.timestamp).toLocaleTimeString()}]</span><br/>
+                  <span style={{ color: '#39FF14' }}>{log.agentId}</span>: <span style={{ color: '#888' }}>{log.topic}</span>
+                </div>
+              ))}
+              <div style={{ color: '#39FF14', animation: 'pulse 1s infinite' }}>_</div>
+            </div>
+          </div>
+
+          {/* Detailed Fleet List (Carbon Style) */}
+          <div style={{ 
+            gridColumn: 'span 12', background: '#111', border: '1px solid #222', borderRadius: '24px', padding: '2rem',
+            marginTop: '1rem'
+          }}>
+            <h3 style={{ margin: '0 0 2rem 0', fontSize: '1.2rem', fontWeight: 700 }}>SOVEREIGN_AGENT_ROSTER</h3>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #222', textAlign: 'left', color: '#555', fontSize: '0.8rem' }}>
+                  <th style={{ padding: '1rem' }}>AGENT_ID</th>
+                  <th style={{ padding: '1rem' }}>SPECIALIZATION</th>
+                  <th style={{ padding: '1rem' }}>STATUS</th>
+                  <th style={{ padding: '1rem' }}>RESERVE</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fleet.agents?.map((agent: any) => (
+                  <tr key={agent.agentId} style={{ borderBottom: '1px solid #181818' }}>
+                    <td style={{ padding: '1rem', fontWeight: 'bold', color: '#39FF14' }}>{agent.agentId}</td>
+                    <td style={{ padding: '1rem', opacity: 0.7 }}>{agent.specialization}</td>
+                    <td style={{ padding: '1rem' }}>
+                      <span style={{ 
+                        padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 'bold',
+                        background: agent.status === 'READY' ? 'rgba(57, 255, 20, 0.1)' : 'rgba(247, 183, 51, 0.1)',
+                        color: agent.status === 'READY' ? '#39FF14' : '#F7B733',
+                        border: `1px solid ${agent.status === 'READY' ? 'rgba(57, 255, 20, 0.2)' : 'rgba(247, 183, 51, 0.2)'}`
+                      }}>
+                        {agent.status}
+                      </span>
+                    </td>
+                    <td style={{ padding: '1rem', fontWeight: 'bold' }}>{agent.reserve.toFixed(2)} π</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
         </div>
 
-        {/* Fleet Card */}
-        <div style={{
-          background: 'rgba(0, 229, 255, 0.05)',
-          border: '1px solid rgba(0, 229, 255, 0.3)',
-          padding: '30px',
-          borderRadius: '15px',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h2 style={{ color: '#d4af37', marginBottom: '20px' }}>ACTIVE FLEET</h2>
-          <div style={{ fontSize: '3rem', fontWeight: 'bold' }}>
-            {metrics.agents} <span style={{ fontSize: '1rem' }}>Agents</span>
-          </div>
-          <p style={{ marginTop: '10px' }}>Autonomous Scaling: ENABLED</p>
-        </div>
+        <footer style={{ marginTop: '4rem', textAlign: 'center', opacity: 0.2, fontSize: '0.7rem', letterSpacing: '4px' }}>
+          AMRIKYY LAB // SOVEREIGN ENGINE // ALL RIGHTS RESERVED
+        </footer>
+      </main>
 
-        {/* Neural Pulse Card */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          padding: '30px',
-          borderRadius: '15px',
-          backdropFilter: 'blur(10px)',
-          gridColumn: 'span 2'
-        }}>
-          <h2 style={{ color: '#ff007f', marginBottom: '20px' }}>NEURAL FEED</h2>
-          <div style={{ fontStyle: 'italic', opacity: 0.8 }}>
-            > Initializing Neural Memory Bridge...<br/>
-            > All Sovereign Tools Registered: 7/7<br/>
-            > Cycle 5 Complete: Yield Swarm Deployed.<br/>
-            > Monitoring Cross-Chain Liquidity...
-          </div>
-        </div>
-
-      </div>
-
-      {/* Footer */}
-      <footer style={{ marginTop: '50px', fontSize: '0.8rem', opacity: 0.4 }}>
-        AMRIKYY LAB | SOVEREIGN AGENT ECONOMY | VER 1.0.5-AUTONOMY
-      </footer>
+      <style jsx global>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        body { margin: 0; background-color: #0a0a0a; }
+      `}</style>
     </div>
   );
 }
