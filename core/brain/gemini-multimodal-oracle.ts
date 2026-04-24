@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import crypto from "node:crypto";
-import { PluginGateway } from "../engine/plugin-gateway.js";
-import { AmrikyyTreasury } from "../finance/treasury-vault.js";
+import { PluginGateway } from "../engine/plugin-gateway";
+import { AmrikyyTreasury } from "../finance/treasury-vault";
 
 /**
  * MAS-ZERO NEURAL ORACLE

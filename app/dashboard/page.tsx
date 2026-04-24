@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+import { OmniTerminal } from '../components/omni-terminal';
 
 /**
  * AMRIKYY LAB :: SOVEREIGN DASHBOARD V2
@@ -131,25 +132,14 @@ export default function SovereignDashboard() {
             </div>
           </div>
 
-          {/* Neural Terminal Feed */}
+          {/* Omni-Command Terminal - The Steerability Bridge */}
           <div style={{ 
             gridColumn: 'span 4', background: '#070707', border: '1px solid #333', borderRadius: '24px', padding: '1.5rem',
-            fontFamily: '"JetBrains Mono", "Fira Code", monospace', fontSize: '0.8rem', position: 'relative',
-            overflow: 'hidden'
+            position: 'relative', overflow: 'hidden', height: '400px', display: 'flex', flexDirection: 'column'
           }}>
             <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: '#39FF14', boxShadow: '0 0 10px #39FF14' }} />
-            <div style={{ marginBottom: '1rem', color: '#39FF14', fontSize: '0.7rem', fontWeight: 'bold' }}>NEURAL_TERMINAL_FEED v1.0</div>
-            <div style={{ color: '#555', lineHeight: '1.6' }}>
-              {logs.length === 0 ? (
-                <div>{">"} Waiting for neural pulse...</div>
-              ) : logs.map((log: any, i: number) => (
-                <div key={log.id} style={{ marginBottom: '0.5rem', borderLeft: '1px solid #222', paddingLeft: '0.5rem' }}>
-                  <span style={{ color: '#333' }}>[{new Date(log.timestamp).toLocaleTimeString()}]</span><br/>
-                  <span style={{ color: '#39FF14' }}>{log.agentId}</span>: <span style={{ color: '#888' }}>{log.topic}</span>
-                </div>
-              ))}
-              <div style={{ color: '#39FF14', animation: 'pulse 1s infinite' }}>_</div>
-            </div>
+            <div style={{ marginBottom: '1rem', color: '#39FF14', fontSize: '0.7rem', fontWeight: 'bold', letterSpacing: '1px' }}>OMNI_COMMAND_TERMINAL v2.0 :: STEERABILITY_LINK</div>
+            <OmniTerminal />
           </div>
 
           {/* Detailed Fleet List (Carbon Style) */}

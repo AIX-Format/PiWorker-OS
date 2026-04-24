@@ -128,45 +128,56 @@ graph TB
 
 ---
 
-## 💎 Sovereign Assets (Cycle 1-6)
-We have autonomously engineered and deployed the following high-value assets within **Amrikyy Lab**:
+# PiWorker-OS (π-OS)
+### The Sovereign Control Plane for Agentic & Embodied Intelligence
+**Amrikyy Lab :: Sovereign Power through Neural-Physical Convergence**
 
-| Asset Name | ID | Cost (Pi) | Function |
-|------------|----|-----------|----------|
-| **Sovereign Herald** | `sovereign-herald` | 0.5 | Professional ledger status broadcasting. |
-| **GitHub Bounty Scraper** | `github-bounty-scraper` | 1.5 | External wealth discovery (Bounties). |
-| **X Viral Broadcaster** | `x-broadcaster` | 2.0 | Autonomous social influence & viral distribution. |
-| **DeFi Arbitrage Scanner** | `defi-arbitrage` | 3.0 | Cross-protocol price discrepancy harvester. |
-| **Immunefi Harvester** | `immunefi-harvester` | 5.0 | Multi-million dollar security bounty targeting. |
-| **Sovereign MEV Engine** | `mev-harvester` | 10.0 | Maximal value capture & strategic ordering. |
-| **Yield Swarm** | `yield-swarm` | 15.0 | Multi-chain liquidity & yield optimization. |
-| **Sentiment Oracle** | `sentiment-oracle` | 4.0 | Predictive intelligence via social mood. |
-| **Robot Pi Commander** | `openpi-commander` | 25.0 | High-fidelity physical task execution via π0.7. |
+PiWorker-OS is not just an automation tool; it is a **High-Fidelity Control Plane** designed to bridge the gap between high-level Neural Reasoning (Brains) and low-level Physical Execution (Bodies). 
+
+By integrating Google’s **Gemini Robotics** for multimodal reasoning and Physical Intelligence’s **π0.7 (OpenPI)** for VLA (Vision-Language-Action) kinematics, PiWorker-OS provides the missing layer: **Orchestration, Governance, and Fiscal Settlement.**
 
 ---
 
-## 🔄 The Eternal Sovereign Loop (Level 5)
-The system operates in a continuous heartbeat cycle:
-1. **Research:** Scanning market trends to identify missing tools.
-2. **Invention:** Architecting and coding new plugins autonomously.
-3. **Execution:** Deploying agents to use tools and harvest profit.
-4. **Scaling:** Automatically spawning new agents when treasury reserves exceed 200 Pi.
+## 🏛️ Strategic Positioning: The Bridge
+In a world of fragmented AI models and robotic platforms, PiWorker-OS sits as the **Sovereign Layer**:
+- **Brains (Perception/Reasoning):** Native integration with Google Gemini 1.5 Pro & Flash.
+- **Bodies (Action/Kinematics):** Native adapters for OpenPI (π0.7) and ROS-based systems.
+- **Goverance (Planning/Audit):** The **MAS-ZERO** Engine, ensuring every action is audited, safe, and profitable.
 
 ---
 
-## 🚀 Quick Start
+## 🏗️ Core Neural Architecture
+- **VLA Orchestrator:** Translates high-level natural language intent into structured VLA payloads for π0.7.
+- **PoPW (Proof of Physical Work):** A visual-fiscal protocol. The Gemini Oracle performs a multimodal audit of the robot's camera feed before releasing Pi rewards via the Soroban Escrow.
+- **Telemetry Moat:** An immutable, append-only audit ledger (`telemetry.jsonl`) capturing every neural, physical, and financial event for total accountability.
+- **Fiscal Integrity:** Automated **Sovereign Escrows** that lock Pi rewards during task execution, ensuring agents only get paid for verified successes.
+- **The Sandbox:** Isolated execution environment for agentic skills, protecting the physical hardware from unverified logic.
+
+---
+
+## 🚀 First Integration: Gemini + OpenPI
+PiWorker-OS operationalizes the **Steerability** of π0.7 through Gemini’s high-reasoning planning:
+1.  **Prompt:** User provides a complex objective (e.g., "Sort the inventory by material and log it").
+2.  **Plan:** Gemini 1.5 Pro breaks this into a chain of physical tasks.
+3.  **Execute:** PiWorker-OS dispatches VLA payloads to the OpenPI inference node.
+4.  **Audit:** Gemini 1.5 Flash verifies the physical result via PoPW.
+5.  **Settle:** Autonomous payment release to the robot's DID wallet.
+
+---
+
+## 🛠️ Getting Started
 ```bash
-# Clone and Install
+# Clone the Sovereign Hub
 git clone https://github.com/Moeabdelaziz007/PiWorker-OS.git
-npm install
 
-# Start the Eternal Sovereign Loop
-node bootstrap.js
+# Configure the Neural-Physical Bridge
+cp .env.example .env
+# Set GEMINI_API_KEY and OPENPI_INFERENCE_URL
 ```
 
 ---
-
-## 🏛️ Architect & Sovereign Governance
+**"We are not building a repo. We are building the layer that connects the Mind to the Body."**
+*Amrikyy Lab :: 2026*
 <div align="center">
   <img src="https://github.com/Moeabdelaziz007.png" width="120" style="border-radius: 50%; border: 2px solid #39FF14;" alt="Moeabdelaziz007"/>
   <br/>
@@ -175,5 +186,5 @@ node bootstrap.js
 </div>
 
 <div align="center">
-  <p><strong>Amrikyy Lab :: PiWorker-OS v1.2.0-Sovereign</strong></p>
+  <p><strong>Amrikyy Lab :: PiWorker-OS v1.3.0-Sovereign</strong></p>
 </div>

@@ -1,27 +1,35 @@
-import { AgentInstance, AgentSpecialization, spawnAgent } from "./agent-spawner.js";
-import { PersistenceEngine } from "../brain/persistence-engine.js";
-import { AmrikyyTreasury } from "../finance/treasury-vault.js";
+import { Agent, AgentSpecialization, AgentRole } from "../types/agent";
+import { AgentRegistry } from "../identity/agent-registry";
+import { AmrikyyTreasury } from "../finance/treasury-vault";
 
 class FleetManager {
-  private fleet: Map<string, AgentInstance> = new Map();
+  private registry?: AgentRegistry;
+
+  private async getRegistry(): Promise<AgentRegistry> {
+    if (!this.registry) {
+      this.registry = await AgentRegistry.getInstance();
+    }
+    return this.registry;
+  }
 
   /**
    * Registers an agent and synchronizes state to disk.
    */
-  async register(agent: AgentInstance) {
-    this.fleet.set(agent.agentId, agent);
-    console.log(`[FLEET_MANAGER] Tracking Agent: ${agent.agentId} (${agent.specialization})`);
-    await this.syncToDisk();
+  async register(agent: Agent) {
+    const reg = await this.getRegistry();
+    await reg.registerAgent(agent);
+    console.log(`[FLEET_MANAGER] Tracking Sovereign Agent: ${agent.name} (${agent.id})`);
   }
 
   /**
    * Updates an agent's status and syncs.
    */
-  async updateStatus(agentId: string, status: "READY" | "BUSY" | "OFFLINE") {
-    const agent = this.fleet.get(agentId);
+  async updateStatus(agentId: string, status: any) {
+    const reg = await this.getRegistry();
+    const agent = reg.getAgent(agentId);
     if (agent) {
       agent.status = status;
-      await this.syncToDisk();
+      await reg.registerAgent(agent);
     }
   }
 
@@ -30,38 +38,40 @@ class FleetManager {
    */
   async evaluateScaling() {
     const stats = AmrikyyTreasury.getStats();
-    console.log(`[FLEET_MANAGER] Scaling Evaluation: Reserve at ${stats.reserve} Pi.`);
+    const reg = await this.getRegistry();
+    const fleetSize = reg.getAllAgents().length;
+    
+    console.log(`[FLEET_MANAGER] Scaling Evaluation: Reserve at ${stats.reserves['(default)'] || 0} Pi.`);
 
-    if (stats.reserve >= 200 && this.fleet.size < 10) {
+    if ((stats.reserves['(default)'] || 0) >= 200 && fleetSize < 10) {
       console.log("\x1b[1m\x1b[32m[SCALING] Wealth threshold met. Spawning new Sovereign Agent...\x1b[0m");
       const specializations: AgentSpecialization[] = ["BountyHunter", "MarketingSpecialist", "CodeAuditor"];
       const randomSpec = specializations[Math.floor(Math.random() * specializations.length)];
       
-      const newAgent = await spawnAgent(randomSpec, 50);
-      await this.register(newAgent);
-      
-      console.log(`\x1b[32m[SCALING] Success: Agent ${newAgent.agentId} joined the fleet.\x1b[0m`);
+      const newAgent = await reg.mintIdentity(`Agent-${randomSpec}`, "executor", ["automated_task"], randomSpec);
+      console.log(`\x1b[32m[SCALING] Success: Agent ${newAgent.name} joined the fleet.\x1b[0m`);
     }
   }
 
   private async syncToDisk() {
-    await PersistenceEngine.saveFleetState(Array.from(this.fleet.values()));
+    // Legacy method - no longer needed as AgentRegistry handles persistence
   }
 
   /**
    * Loads the fleet state from disk during initialization.
    */
   async initialize() {
-    console.log("[FLEET_MANAGER] Initializing Sovereign Fleet...");
-    // Future: Load from PersistenceEngine.loadFleetState();
+    console.log("[FLEET_MANAGER] Initializing Sovereign Fleet Registry...");
+    await this.getRegistry();
   }
 
   /**
    * Retrieves the healthiest agent for a specific specialization.
    */
-  findExecutor(specialization: AgentSpecialization): AgentInstance | null {
-    for (const agent of this.fleet.values()) {
-      if (agent.specialization === specialization && agent.status === "READY") {
+  async findExecutor(specialization: AgentSpecialization): Promise<Agent | null> {
+    const reg = await this.getRegistry();
+    for (const agent of reg.getAllAgents()) {
+      if (agent.specialization === specialization && (agent.status === "active" || agent.status === "idle")) {
         return agent;
       }
     }
@@ -71,30 +81,29 @@ class FleetManager {
   /**
    * Returns current fleet metrics.
    */
-  getMetrics() {
-    const total = this.fleet.size;
-    const active = Array.from(this.fleet.values()).filter(a => a.status === "BUSY").length;
+  async getMetrics() {
+    const reg = await this.getRegistry();
+    const agents = reg.getAllAgents();
+    const total = agents.length;
+    const active = agents.filter(a => a.status === "active" || a.status === "busy").length;
     const ready = total - active;
     
     return { total, active, ready };
   }
 
-  /**
-   * Allows an agent to request help from a specialist.
-   */
   async requestCollaboration(requesterId: string, targetSpecialization: AgentSpecialization, task: string) {
-    const specialist = this.findExecutor(targetSpecialization);
+    const specialist = await this.findExecutor(targetSpecialization);
     if (specialist) {
       console.log(`\x1b[33m[COLLABORATION] ${requesterId} requesting ${targetSpecialization} for: ${task}\x1b[0m`);
-      specialist.status = "BUSY";
-      await this.syncToDisk();
-      return { success: true, specialistId: specialist.agentId };
+      await this.updateStatus(specialist.id, "busy");
+      return { success: true, specialistId: specialist.id };
     }
     return { success: false, message: "No available specialist found." };
   }
 
-  getAllAgents() {
-    return Array.from(this.fleet.values());
+  async getAllAgents() {
+    const reg = await this.getRegistry();
+    return reg.getAllAgents();
   }
 }
 

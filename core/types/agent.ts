@@ -6,12 +6,14 @@ import { EconomicRiskLevel } from "../governance-engine";
  * Foundational Clean Room Implementation
  */
 
-export const AgentRoleEnum = z.enum(["ceo", "executor", "critic", "auditor"], {
-  required_error: "يجب تحديد دور الوكيل (ceo, executor, critic, auditor)",
+export const AgentRoleEnum = z.enum(["ceo", "executor", "critic", "auditor", "specialist"], {
+  required_error: "يجب تحديد دور الوكيل",
   invalid_type_error: "دور الوكيل غير صالح",
 });
 
 export type AgentRole = z.infer<typeof AgentRoleEnum>;
+
+export type AgentSpecialization = "CODE_GEN" | "AUDITOR" | "RESEARCHER" | "CONTENT_ARCH" | "BountyHunter" | "MarketingSpecialist" | "CodeAuditor";
 
 export const AgentMutationSchema = z.object({
   id: z.string().uuid("معرف الطفرة يجب أن يكون UUID صالحاً"),
@@ -70,7 +72,23 @@ export const AgentSchema = z.object({
     riskTolerance: z.nativeEnum(EconomicRiskLevel).default(EconomicRiskLevel.MEDIUM),
   }).strict(),
   
-  status: z.enum(["active", "idle", "hibernating", "terminated"]).default("idle"),
+  specialization: z.string().optional(),
+  
+  metrics: z.object({
+    totalProfit: z.number().default(0),
+    tasksCompleted: z.number().default(0),
+    reputation: z.number().min(0).max(1).default(1),
+    spawnTime: z.string().datetime().default(() => new Date().toISOString()),
+  }).optional(),
+
+  identity: z.object({
+    browser: z.string(),
+    os: z.string(),
+    deviceId: z.string(),
+    userAgent: z.string(),
+  }).optional(),
+
+  status: z.enum(["active", "idle", "busy", "offline", "hibernating", "terminated"]).default("idle"),
 }).strict();
 
 export type Agent = z.infer<typeof AgentSchema>;

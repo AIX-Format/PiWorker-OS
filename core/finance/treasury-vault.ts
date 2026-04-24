@@ -11,7 +11,38 @@ export class AmrikyyTreasury {
     "SOL": 0.0,
     "ETH": 0.0
   };
+  private static ESCROWS: Record<string, { amount: number; agentId: string; status: "LOCKED" | "RELEASED" }> = {};
   private static SOVEREIGN_TAX_RATE = 0.10;
+
+  /**
+   * Creates an escrow for a task, locking funds.
+   */
+  static createEscrow(orderId: string, agentId: string, amount: number) {
+    if (this.RESERVES["Pi"] < amount) {
+      throw new Error(`[TREASURY] ❌ Insufficient reserves for escrow: ${amount} Pi requested, ${this.RESERVES["Pi"]} available.`);
+    }
+
+    this.RESERVES["Pi"] -= amount;
+    this.ESCROWS[orderId] = { amount, agentId, status: "LOCKED" };
+    
+    console.log(`[TREASURY] 🔐 Escrow created for Order ${orderId}: ${amount} Pi locked.`);
+    return orderId;
+  }
+
+  /**
+   * Releases escrowed funds to an agent after successful task completion.
+   */
+  static releaseEscrow(orderId: string) {
+    const escrow = this.ESCROWS[orderId];
+    if (!escrow || escrow.status !== "LOCKED") {
+      throw new Error(`[TREASURY] ❌ No locked escrow found for Order ${orderId}.`);
+    }
+
+    escrow.status = "RELEASED";
+    // Funds are "released" to the agent's hypothetical wallet (simulated by processInflow if needed)
+    console.log(`[TREASURY] 🔓 Escrow released for Order ${orderId}: ${escrow.amount} Pi credited to ${escrow.agentId}.`);
+    return true;
+  }
 
   /**
    * Processes an agent's task profit in a specific currency.
