@@ -18,6 +18,7 @@ export interface SovereignInsight {
 
 export class NeuralMemoryMesh {
   private static blackboard: SovereignInsight[] = [];
+  private static activeClaims: Map<string, { agentId: string, expires: number }> = new Map();
 
   /**
    * Posts a signed insight to the collective memory.
@@ -43,6 +44,34 @@ export class NeuralMemoryMesh {
   static query(topic?: string) {
     if (!topic) return this.blackboard.sort((a, b) => b.relevance - a.relevance);
     return this.blackboard.filter(i => i.topic === topic);
+  }
+
+  /**
+   * Claims a task for an agent. Returns true if claim successful.
+   */
+  static claimTask(taskId: string, agentId: string, durationMs: number = 300000): boolean {
+    const now = Date.now();
+    const existing = this.activeClaims.get(taskId);
+
+    if (existing && existing.expires > now) {
+      console.log(`[NEURAL_MEMORY] Task ${taskId} is already claimed by ${existing.agentId}`);
+      return false;
+    }
+
+    this.activeClaims.set(taskId, { agentId, expires: now + durationMs });
+    console.log(`\x1b[36m[NEURAL_MEMORY] Agent ${agentId} claimed task ${taskId}\x1b[0m`);
+    return true;
+  }
+
+  /**
+   * Releases a task claim.
+   */
+  static releaseTask(taskId: string, agentId: string) {
+    const claim = this.activeClaims.get(taskId);
+    if (claim && claim.agentId === agentId) {
+      this.activeClaims.delete(taskId);
+      console.log(`[NEURAL_MEMORY] Task ${taskId} released by ${agentId}`);
+    }
   }
 
   /**
