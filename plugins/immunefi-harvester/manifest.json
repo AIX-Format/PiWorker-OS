@@ -1,0 +1,33 @@
+{
+  "id": "immunefi-harvester",
+  "name": "Immunefi Intelligence Harvester",
+  "version": "1.1.0",
+  "description": "High-fidelity DeFi vulnerability scanner and bounty scraper for Immunefi. Targets multi-million dollar bounty pools.",
+  "costPerUse": 5.0,
+  "entryPoint": "index.js",
+  "signature": "SIG_SOVEREIGN_ROOT_0xABCD",
+  "toolSchema": {
+    "name": "harvest_defi_bounties",
+    "description": "Scans Immunefi for active bug bounties on specific chains and protocols with high ROI potential.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "chains": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Target blockchain networks (e.g. ['ethereum', 'solana', 'arbitrum'])."
+        },
+        "minBountyUSD": {
+          "type": "number",
+          "description": "Minimum bounty value to filter for (e.g. 50000)."
+        },
+        "protocolTypes": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific protocol categories (e.g. ['dex', 'lending', 'bridge'])."
+        }
+      },
+      "required": ["chains"]
+    }
+  }
+}
