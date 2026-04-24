@@ -30,6 +30,23 @@ export class AmrikyyTreasury {
   }
 
   /**
+   * Deducts a fixed fee for plugin/tool usage.
+   */
+  static deductUsageFee(agentId: string, fee: number, toolName: string) {
+    this.NATIONAL_RESERVE += fee;
+    console.log(`\x1b[33m[FINANCE] ${agentId} paid ${fee} Pi for using ${toolName}.\x1b[0m`);
+    
+    return {
+      txId: `tx-tool-${crypto.randomBytes(4).toString("hex")}`,
+      agentId,
+      fee,
+      toolName,
+      newNationalReserve: this.NATIONAL_RESERVE,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
    * Returns the current state of the national wealth.
    */
   static getStats() {

@@ -10,13 +10,15 @@ export class SignatureProvider {
    */
   static generateIdentity() {
     const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519", {
-      modulusLength: 2048,
       publicKeyEncoding: { type: "spki", format: "pem" },
       privateKeyEncoding: { type: "pkcs8", format: "pem" },
     });
 
     // Mock Pi Wallet Address generation (using public key hash)
-    const walletAddress = `pi-${crypto.createHash("sha256").update(publicKey).digest("hex").slice(0, 32)}`;
+    // Fix: Ensure  static async signAction(privateKey: string, action: any): Promise<string> {
+    const keyData = typeof privateKey === "string" ? privateKey : String(privateKey);
+    const signer = crypto.createSign("sha256");
+    const walletAddress = `pi-${crypto.createHash("sha256").update(keyData).digest("hex").slice(0, 32)}`;
 
     return { publicKey, privateKey, walletAddress };
   }
