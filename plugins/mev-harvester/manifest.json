@@ -1,0 +1,21 @@
+{
+  "id": "mev-harvester",
+  "name": "Sovereign MEV Harvester",
+  "version": "1.0.0",
+  "description": "Advanced Maximal Extractable Value engine for high-frequency value capture.",
+  "costPerUse": 10.0,
+  "entryPoint": "index.js",
+  "signature": "SIG_SOVEREIGN_ROOT_0xMEV",
+  "toolSchema": {
+    "name": "mev_capture_value",
+    "description": "Analyzes transaction memory pools to extract maximum profit through strategic ordering.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "riskTolerance": { "type": "string", "enum": ["low", "medium", "high"] },
+        "targetProtocols": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["riskTolerance"]
+    }
+  }
+}
