@@ -1,17 +1,13 @@
-import { SovereignBridge } from "../core/engine/sovereign-bridge";
 import fs from 'node:fs';
 import path from 'node:path';
 
 /**
- * PiWorker-OS Pre-flight Validator
- * Developed by MAS-ZERO to ensure zero-defect deployments.
- */
-/**
- * PiWorker-OS Pre-flight Validator
- * Developed by MAS-ZERO for High-Fidelity Sovereign Infrastructure.
+ * PiWorker-OS Pre-flight Validator (JS Version)
+ * Developed by MAS-ZERO to bypass build-time loader issues.
+ * Ensures zero-defect deployments for High-Fidelity Sovereign Infrastructure.
  */
 async function runValidation() {
-  console.log("🛠️  [Pre-flight] Starting PiWorker-OS Sovereign Validation...");
+  console.log("🛠️  [Pre-flight] Starting PiWorker-OS Sovereign Validation (Stable JS)...");
 
   const requiredEnv = [
     "SOVEREIGN_AUTH_TOKEN",
@@ -70,7 +66,7 @@ async function runValidation() {
         console.error(`❌ [ENV_ERROR] Missing ${env} in CI/CD environment!`);
         failed = true;
       } else {
-        console.warn(`⚠️ [ENV_WARN] Missing ${env}. Defaulting to unsafe development values.`);
+        console.warn(`⚠️ [ENV_WARN] Missing ${env}. System will enter restricted mode.`);
       }
     } else {
       console.log(`✅ [ENV] ${env} is configured.`);

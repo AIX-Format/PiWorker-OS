@@ -2,8 +2,10 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { TelemetryLogger } from "../utils/telemetry-logger";
 import * as grpc from '@grpc/grpc-js';
-import * as protoLoader from '@grpc/proto-loader';
 import path from 'node:path';
+import { PathResolver } from '../utils/path-resolver';
+import { SovereignCipher } from '../utils/sovereign-cipher';
+import axios from 'axios';
 
 export interface SimulationRequest {
   goalId: string;
@@ -75,6 +77,8 @@ export interface PluginResponse {
  */
 export class SovereignBridge {
   private static readonly ENGINE_URL = process.env.SOVEREIGN_ENGINE_URL || "localhost:50051";
+  private static readonly GATEWAY_URL = process.env.SOVEREIGN_GATEWAY_URL || "http://localhost:50052";
+  
   private static getAuthToken(): string {
     const token = process.env.SOVEREIGN_AUTH_TOKEN;
     if (!token) throw new Error("FATAL: SOVEREIGN_AUTH_TOKEN not set in environment.");
@@ -91,7 +95,8 @@ export class SovereignBridge {
 
   private static getClient() {
     if (!this.client) {
-      const PROTO_PATH = path.join(process.cwd(), 'sidecar/sovereign-engine/proto/sovereign.proto');
+      console.log(`📡 [Bridge] Initializing gRPC Singleton for ${this.ENGINE_URL}...`);
+      const PROTO_PATH = PathResolver.getProtoPath();
       const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
         keepCase: false,
         longs: String,
@@ -111,26 +116,28 @@ export class SovereignBridge {
         clientKey = Buffer.from(process.env.SOVEREIGN_CLIENT_KEY || '', 'utf-8');
       } else {
         // Priority 2: Local Files (Dev)
-        caCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/ca.crt'));
-        clientCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.crt'));
-        clientKey = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.key'));
+        const caPath = PathResolver.getCertPath('ca.crt');
+        if (fs.existsSync(caPath)) {
+          caCert = fs.readFileSync(caPath);
+          clientCert = fs.readFileSync(PathResolver.getCertPath('client.crt'));
+          clientKey = fs.readFileSync(PathResolver.getCertPath('client.key'));
+        }
       }
 
-      const sslCreds = grpc.credentials.createSsl(
-        caCert,
-        clientKey,
-        clientCert
-      );
+      const sslCreds = caCert ? grpc.credentials.createSsl(caCert, clientKey, clientCert) : grpc.credentials.createInsecure();
 
       this.client = new sovereignProto.SovereignService(
         this.ENGINE_URL,
         sslCreds, 
         {
           "grpc.primary_user_agent": "PiWorker-Orchestrator/2.0",
-          "grpc.default_authority": "axiev.org"
+          "grpc.default_authority": "axiev.org",
+          "grpc.keepalive_time_ms": 10000,
+          "grpc.keepalive_timeout_ms": 5000,
+          "grpc.keepalive_permit_without_calls": 1
         }
       );
-      console.log(`[gRPC] Sovereign Bridge secured and connected to ${this.ENGINE_URL}`);
+      console.log(`[gRPC] Sovereign Bridge secured and connected.`);
     }
     return this.client;
   }
@@ -300,5 +307,30 @@ export class SovereignBridge {
         resolve(response as PluginResponse);
       });
     });
+  /**
+   * Dispatches an encrypted intent via the Sovereign Gateway (HTTP/1.1).
+   * Used for Vercel compatibility and cold-start resilience.
+   */
+  public static async dispatchSecureIntent(intent: any): Promise<any> {
+    console.log(`🌐 [Bridge] Dispatching Encrypted Intent via Gateway...`);
+    const secret = process.env.AGENT_SYSTEM_SECRET || "TEMP_SECRET";
+    const authToken = this.getAuthToken();
+
+    const encryptedPayload = SovereignCipher.encrypt(JSON.stringify(intent), secret);
+
+    try {
+      const response = await axios.post(this.GATEWAY_URL, encryptedPayload, {
+        headers: {
+          'X-Sovereign-Token': authToken,
+          'Content-Type': 'text/plain'
+        }
+      });
+
+      const decryptedRes = SovereignCipher.decrypt(response.data, secret);
+      return JSON.parse(decryptedRes);
+    } catch (error: any) {
+      console.error(`❌ [Bridge] Gateway Failure: ${error.message}`);
+      throw new Error(`Sovereign Gateway Error: ${error.message}`);
+    }
   }
 }

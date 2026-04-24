@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/bridge"
+	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/crypto"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/engine"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/finance"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/sandbox"
@@ -16,6 +17,9 @@ import (
 	"encoding/hex"
 	"crypto/tls"
 	"crypto/x509"
+	"net/http"
+	"encoding/json"
+	"io"
 	pb "github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -228,6 +232,46 @@ func (s *sovereignServer) CommitPayment(ctx context.Context, req *pb.PaymentRequ
 	}, nil
 }
 
+// 🌐 [Sovereign Gateway] HTTP/1.1 Bridge for Vercel Compatibility
+func (s *sovereignServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	// 1. Verify Sovereign Auth Token
+	token := r.Header.Get("X-Sovereign-Token")
+	if token == "" || token != os.Getenv("SOVEREIGN_AUTH_TOKEN") {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	// 2. Read Encrypted Body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Read Error", http.StatusInternalServerError)
+		return
+	}
+
+	// 3. Decrypt Payload
+	secret := os.Getenv("AGENT_SYSTEM_SECRET")
+	decrypted, err := crypto.Decrypt(string(body), secret)
+	if err != nil {
+		http.Error(w, "Decryption Failed", http.StatusForbidden)
+		return
+	}
+
+	// 4. Process (Simplified Dispatcher)
+	log.Printf("📥 [Gateway] Received Encrypted Intent: %s", string(decrypted))
+	
+	// For now, we echo back an encrypted success message
+	response := fmt.Sprintf(`{"status": "PROCESSED", "timestamp": "%s", "data": "PI_SOVEREIGN_BRIDGE_ACTIVE"}`, time.Now().Format(time.RFC3339))
+	encryptedRes, _ := crypto.Encrypt([]byte(response), secret)
+	
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(encryptedRes))
+}
+
 func loadmTLSCreds() (*tls.Config, error) {
 	var serverCert, serverKey, caCert []byte
 	var err error
@@ -306,9 +350,22 @@ func main() {
 	// Enable Reflection for debugging tools like grpcui or postman
 	reflection.Register(grpcServer)
 
-	log.Printf("👑 [SOVEREIGN_ENGINE] Steel Gate Active. Online on :%s", port)
-	if err := grpcServer.Serve(lis); err != nil {
-		log.Fatalf("failed to serve: %v", err)
+	// Start gRPC Server in a goroutine
+	go func() {
+		log.Printf("🦾 [Muscle] Sovereign gRPC Server online at %s", lis.Addr().String())
+		if err := grpcServer.Serve(lis); err != nil {
+			log.Fatalf("failed to serve: %v", err)
+		}
+	}()
+
+	// 🌐 Start Sovereign Gateway (HTTP/1.1)
+	httpPort := os.Getenv("SOVEREIGN_HTTP_PORT")
+	if httpPort == "" {
+		httpPort = "50052"
+	}
+	log.Printf("🌐 [Gateway] Sovereign HTTP/1.1 Bridge online at :%s", httpPort)
+	if err := http.ListenAndServe(":"+httpPort, server); err != nil {
+		log.Fatalf("failed to serve http: %v", err)
 	}
 }
 

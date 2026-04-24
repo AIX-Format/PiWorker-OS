@@ -8,10 +8,11 @@
   },
   "scripts": {
     "dev": "next dev",
-    "prebuild": "npx tsx scripts/preflight-check.ts",
+    "prebuild": "node scripts/preflight-check.mjs",
     "build": "next build",
     "build:sovereign": "./scripts/sovereign-build.sh",
     "start": "next start",
+    "forge": "go run dev.go",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"

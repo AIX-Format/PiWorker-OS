@@ -1,22 +1,39 @@
-# Vercel Ignore: Sovereign Assets
-# Allow sidecar source for build and runtimes
+# AMRIKYY LAB :: SOVEREIGN VERCEL IGNORE
+# This file is the primary gatekeeper for Vercel visibility.
+# It is configured to ALLOW the Go Engine source and Next.js layers.
+
+# 1. ALLOWED DIRECTORIES (Sovereign Core)
 !sidecar/
-sidecar/**/bin/
-sidecar/**/obj/
-sidecar/**/*.exe
-sidecar/**/*.log
-!sidecar/physical-bridge/
 !sidecar/sovereign-engine/
-# Allow build scripts
+!sidecar/sovereign-engine/proto/
+!sidecar/physical-bridge/
+!core/
+!app/
+!public/
 !scripts/
-bin/
-# Allow api/ functions
-!api/
-# Allow Go module files for runtime detection
+
+# 2. ALLOWED FILES (Build Detection)
 !go.mod
 !go.sum
-!proto/
+!package.json
+!package-lock.json
+!next.config.js
+!tsconfig.json
+!postcss.config.js
+!tailwind.config.ts
+
+# 3. BLOCKED ASSETS (Security & Weight)
 .git/
 node_modules/
 .next/
 out/
+bin/
+sidecar/**/bin/
+sidecar/**/obj/
+**/*.exe
+**/*.log
+**/*.test.ts
+**/*.spec.ts
+
+# 4. EXPLICIT PROTO VISIBILITY
+!sidecar/sovereign-engine/proto/*.proto
