@@ -47,6 +47,25 @@ export class NeuralMemoryMesh {
   }
 
   /**
+   * Broadcasts a collective signal to all agents in a specific channel.
+   */
+  static async broadcast(topic: string, data: any, agentId: string) {
+    const insight: SovereignInsight = {
+      id: `hive-${crypto.randomBytes(4).toString("hex")}`,
+      agentId,
+      topic,
+      data,
+      signature: `SIG_HIVE_${agentId}`,
+      timestamp: new Date().toISOString(),
+      relevance: 90
+    };
+    
+    await this.postInsight(insight);
+    console.log(`\x1b[1m\x1b[33m[HIVE_MIND] Agent ${agentId} signaled channel #${topic}\x1b[0m`);
+    return insight;
+  }
+
+  /**
    * Claims a task for an agent. Returns true if claim successful.
    */
   static claimTask(taskId: string, agentId: string, durationMs: number = 300000): boolean {

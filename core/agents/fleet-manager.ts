@@ -79,6 +79,20 @@ class FleetManager {
     return { total, active, ready };
   }
 
+  /**
+   * Allows an agent to request help from a specialist.
+   */
+  async requestCollaboration(requesterId: string, targetSpecialization: AgentSpecialization, task: string) {
+    const specialist = this.findExecutor(targetSpecialization);
+    if (specialist) {
+      console.log(`\x1b[33m[COLLABORATION] ${requesterId} requesting ${targetSpecialization} for: ${task}\x1b[0m`);
+      specialist.status = "BUSY";
+      await this.syncToDisk();
+      return { success: true, specialistId: specialist.agentId };
+    }
+    return { success: false, message: "No available specialist found." };
+  }
+
   getAllAgents() {
     return Array.from(this.fleet.values());
   }
