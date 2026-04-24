@@ -1,0 +1,21 @@
+{
+  "id": "defi-arbitrage",
+  "name": "DeFi Arbitrage Scanner",
+  "version": "1.0.0",
+  "description": "Scans decentralised exchanges for price discrepancies in stablecoins.",
+  "costPerUse": 3.0,
+  "entryPoint": "index.js",
+  "signature": "SIG_SOVEREIGN_ROOT_0xCAFE",
+  "toolSchema": {
+    "name": "defi_scan_arbitrage",
+    "description": "Identifies ROI opportunities across DEX liquidity pools.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "minROI": { "type": "number", "description": "Minimum percentage return." },
+        "pair": { "type": "string", "description": "Asset pair to scan (e.g. USDT/USDC)." }
+      },
+      "required": ["minROI"]
+    }
+  }
+}
