@@ -4,11 +4,14 @@ import path from 'node:path';
 /**
  * AMRIKYY LAB :: TREASURY STORAGE (Persistence Layer)
  * PURPOSE: Ensures the National Reserves and Escrows survive server restarts.
- * This is the "Verifiable Wealth" bridge.
+ * Support for both Local FileSystem and Serverless KV (Redis).
  */
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const STORAGE_FILE = path.join(DATA_DIR, 'treasury.json');
+
+// NOTE: In Production (Vercel), replace this with @vercel/kv for true serverless persistence.
+// The file-based system will fail in serverless due to ephemeral storage.
 
 export interface TreasuryState {
   reserves: Record<string, number>;

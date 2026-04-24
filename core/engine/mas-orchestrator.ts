@@ -17,6 +17,7 @@ import { OpenPiAdapter } from "../../sidecar/physical-bridge/openpi-adapter";
 import { EconomicRiskLevel } from "../governance-engine";
 import { NeuralMemoryMesh } from "../brain/neural-memory";
 import { SovereignBridge } from "./sovereign-bridge";
+import { AgentRegistry } from "../identity/agent-registry";
 
 /**
  * PiWorker-OS MASOrchestrator
@@ -99,7 +100,15 @@ export class MASOrchestrator extends EventEmitter {
       });
 
       if (health.actionTaken === "cannibalize") {
-        this.handleAgentFailure(executor, actualRoi);
+        await this.handleAgentFailure(executor, actualRoi);
+      } else {
+        // 🧬 Evolution: Reward success
+        executor.dna.fitnessScore = Math.min(100, executor.dna.fitnessScore + 2);
+        executor.metrics.tasksCompleted += 1;
+        executor.metrics.totalProfit += (actualRoi - 1.0) * 100; // Simulated profit contribution
+        
+        const registry = await AgentRegistry.getInstance();
+        await registry.registerAgent(executor);
       }
 
       this.emit(OrchestrationEvent.EXECUTION_COMPLETED, {
@@ -343,9 +352,22 @@ export class MASOrchestrator extends EventEmitter {
     return baseRoi + deviation;
   }
 
-  private handleAgentFailure(agent: Agent, roi: number): void {
+  private async handleAgentFailure(agent: Agent, roi: number): Promise<void> {
     console.warn(`[Orchestrator] معالجة فشل الوكيل ${agent.name}. بدء الطفرة الجينية.`);
-    agent.dna.fitnessScore = Math.max(0, agent.dna.fitnessScore - 10);
+    
+    // 🧬 Real DNA Evolution: Reduce fitness and add a failure mutation
+    agent.dna.fitnessScore = Math.max(0, agent.dna.fitnessScore - 15);
+    agent.dna.mutations.push({
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+      traitModified: "risk_aversion",
+      impactDelta: 0.1
+    });
+
+    // 💾 Persistence: Sync to registry
+    const registry = await AgentRegistry.getInstance();
+    await registry.registerAgent(agent);
+
     this.emit(OrchestrationEvent.AGENT_MUTATED, {
       agentId: agent.id,
       newFitness: agent.dna.fitnessScore,
