@@ -37,6 +37,15 @@ export class AssetRegistry {
     this.logToTelemetry(asset);
   }
 
+  static updateAsset(updatedAsset: AIXAsset): void {
+    let assets = this.getAssets();
+    const index = assets.findIndex(a => a.id === updatedAsset.id);
+    if (index !== -1) {
+        assets[index] = updatedAsset;
+        fs.writeFileSync(this.REGISTRY_FILE, JSON.stringify(assets, null, 2));
+    }
+  }
+
   private static logToTelemetry(asset: AIXAsset): void {
     const telemetryPath = path.join(process.cwd(), 'telemetry.jsonl');
     const entry = {
