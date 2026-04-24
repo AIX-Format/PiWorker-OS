@@ -47,7 +47,8 @@ async function runSovereignSimulation() {
 
   // STEP 2: TASK ASSIGNMENT
   console.log("\x1b[34m[STEP 2] Assigning Task: Analyze market data...\x1b[0m");
-  const taskResult = await ContentArbitrageSkill.execute(genesis.did, genesis.passport.sovereign_keys.public_key, "Market Delta Alpha");
+  // Fix: Genesis response structure
+  const taskResult = await ContentArbitrageSkill.execute(genesis.did, (genesis as any).privateKey, "Market Delta Alpha");
   console.log(`\x1b[32m[SUCCESS] Task Completed. ROI: ${taskResult.finance.taxAmount.toFixed(4)} Pi harvested for Treasury.\x1b[0m\n`);
 
   // STEP 3: THE SIGNATURE VERIFICATION

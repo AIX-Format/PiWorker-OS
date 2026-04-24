@@ -36,7 +36,7 @@ export async function scanBounty(
     difficulty,
     estimatedPiValue: evaluation.estimatedProfitPi,
     riskScore,
-    requiredSkills: ["Next.js", "TypeScript", "Soroban"],
+    requiredSkills: (evaluation as any).requiredSkills || ["General AI"],
     oracleCertificate: `CERT_${evaluation.metadataHash.slice(0, 16).toUpperCase()}`
   };
 
