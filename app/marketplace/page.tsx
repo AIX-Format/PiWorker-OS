@@ -91,7 +91,10 @@ export default function SovereignMarketplace() {
             // 2. Pass the txid to our secure Next.js API -> Go Engine LedgerConnector
             const res = await fetch('/api/marketplace/purchase', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${activeToken}`
+              },
               body: JSON.stringify({
                 assetId: agentId,
                 buyerWallet: currentUser!.uid,

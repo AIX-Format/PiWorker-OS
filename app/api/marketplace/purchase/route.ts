@@ -7,9 +7,35 @@ import { SovereignBridge } from '@/core/engine/sovereign-bridge';
 export async function POST(request: Request) {
     try {
         const { assetId, buyerWallet, txId } = await request.json();
+        const authHeader = request.headers.get('authorization');
 
         if (!assetId || !buyerWallet || !txId) {
             return NextResponse.json({ error: 'Missing assetId, buyerWallet, or txId' }, { status: 400 });
+        }
+
+        // 0. ZERO-TRUST IDOR PREVENTION: Verify the accessToken
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized: Missing or invalid token' }, { status: 401 });
+        }
+
+        const accessToken = authHeader.split(' ')[1];
+
+        // Verify against Pi Network API to confirm the token belongs to buyerWallet
+        try {
+            const meRes = await fetch('https://api.minepi.com/v2/me', {
+                headers: { 'Authorization': `Bearer ${accessToken}` }
+            });
+
+            if (!meRes.ok) throw new Error('Pi Network rejected the access token');
+            const meData = await meRes.json();
+
+            if (meData.uid !== buyerWallet) {
+                console.error(`[SECURITY_BREACH] IDOR Attempt! Token UID ${meData.uid} tried to act as ${buyerWallet}`);
+                return NextResponse.json({ error: 'Forbidden: Wallet identity mismatch' }, { status: 403 });
+            }
+        } catch (authErr) {
+            console.error('[API_PURCHASE] Token verification failed:', authErr);
+            return NextResponse.json({ error: 'Unauthorized: Invalid token' }, { status: 401 });
         }
 
         // 1. Fetch asset to determine expected amount
