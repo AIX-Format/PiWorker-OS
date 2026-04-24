@@ -43,7 +43,7 @@
 - [x] **Master Build Orchestrator**: `scripts/sovereign-build.sh` implemented and integrated.
 - [x] **Zero-Error CI Pipeline**: Strict TS/Go checks and automated deployment trigger.
 - [x] **The Sandbox Audit**: Integrated Playwright E2E tests and Go engine service container into GitHub Actions.
-- [/] **Live Vercel Deployment**: Production deployment in progress, verifying live link via browser.
+- [x] **Live Vercel Deployment**: Fixed Go runtime error by initializing root `go.mod` and explicitly setting runtime to `go` in `vercel.json`. Prevents legacy `vercel-go` fallback.
 
 ### Infrastructure & Security Status
 - **CI/CD**: Green (Pre-Sandbox Integration).
