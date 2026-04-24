@@ -78,7 +78,13 @@ async function runSovereignBootstrap() {
       const bridge = await import("./core/finance/fiscal-bridge.js");
       await bridge.FiscalBridge.autoDiversify();
 
-      // F. Cooldown
+      // G. SOVEREIGN SHIELD (Defense)
+      const shield = await import("./core/security/sovereign-shield.js");
+      if (cycleCount % 5 === 0) { // Rotate identities every 5 cycles
+        shield.SovereignShield.rotateIdentity(agent.agentId);
+      }
+
+      // H. Cooldown
       cycleCount++;
       await new Promise(resolve => setTimeout(resolve, 30000)); // 30s Heartbeat
     }

@@ -62,6 +62,23 @@ export async function spawnAgent(
 
   console.log(`[SPAWNER] Initializing new ${specialization} Agent: ${agentId}`);
 
+    const { SovereignShield } = await import("../security/sovereign-shield.js");
+
+    const agent: any = {
+      agentId: `agn-${crypto.randomBytes(4).toString("hex")}`,
+      specialization,
+      status: "READY",
+      totalProfit: 0,
+      piBudget: initialBudget || 100,
+      identity: identity,
+      security: {
+        riskTolerance: 0.8,
+        threatLevel: SovereignShield.getThreatLevel(),
+        lastRotation: new Date().toISOString()
+      },
+      createdAt: new Date().toISOString()
+    };
+
   const instance: AgentInstance = {
     agentId,
     specialization,
