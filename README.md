@@ -45,7 +45,7 @@
 
   <!-- Title -->
   <text x="400" y="245" text-anchor="middle" fill="#fff" font-size="32" class="title" letter-spacing="2">PIWORKER-OS</text>
-  <text x="400" y="265" text-anchor="middle" fill="#39FF14" font-size="12" class="subtitle" letter-spacing="4">SOVEREIGN AGENT ECONOMY // MAS-ZERO</text>
+  <text x="400" y="265" text-anchor="middle" fill="#39FF14" font-size="12" class="subtitle" letter-spacing="4">SOVEREIGN AGENT ECONOMY // PHYSICAL INTELLIGENCE</text>
 </svg>
 
 <div align="center">
@@ -63,9 +63,9 @@
 </p>
 
 <h3>
-  <span>🧠</span> وكلاء ذكاء اصطناعي ذاتيون يولدون الدخل
+  <span>🧠</span> وكلاء ذكاء اصطناعي ذاتيون يولدون الدخل ويديرون الروبوتات الفيزيائية
   <br/>
-  <em>Self-Evolving AI Agents That Print Money</em>
+  <em>Self-Evolving AI Agents That Print Money & Control Pi-Robots</em>
 </h3>
 
 <p>
@@ -94,35 +94,36 @@
 graph TB
     subgraph User["👤 User Sovereignty Layer"]
         UI[Amrikyy Lab Sovereign Command Center]
-        Logo[Quantum Logo Assets]
     end
 
     subgraph Kernel["⚡ Core Engine (MAS-ZERO)"]
         CK[MAS-Orchestrator]
         DNA[Agent DNA Registry]
-        CB[Circuit Breaker / Betrayal]
     end
 
     subgraph Intelligence["🧠 Brain Layer"]
         QM[Quantum Mirror Sim]
-        GB[Gemma Brain - Local 4B/27B]
-        SR[Synapse Router - A2A]
+        GB[Gemma Brain / π0.7 Foundation]
     end
 
     subgraph Execution["💰 Profit Workforce"]
         PV[Profit Vortex]
         SM[Sandbox Manager]
-        BH[Bounty Hunter Skill]
+    end
+
+    subgraph Physical["🤖 Physical Layer"]
+        RP[Robot Pi Hardware]
+        OP[OpenPi Adapter]
     end
 
     UI -->|Directive| CK
     CK -->|Spawn| DNA
     DNA -->|Simulate| QM
     QM -->|Logic Check| GB
-    GB -->|Route| SR
-    SR -->|Execute| SM
-    SM -->|Isolate| BH
-    BH -->|Audit| PV
+    GB -->|Action| SM
+    SM -->|Inference| OP
+    OP -->|Motor Control| RP
+    RP -->|Feedback| PV
 ```
 
 ---
@@ -140,6 +141,7 @@ We have autonomously engineered and deployed the following high-value assets wit
 | **Sovereign MEV Engine** | `mev-harvester` | 10.0 | Maximal value capture & strategic ordering. |
 | **Yield Swarm** | `yield-swarm` | 15.0 | Multi-chain liquidity & yield optimization. |
 | **Sentiment Oracle** | `sentiment-oracle` | 4.0 | Predictive intelligence via social mood. |
+| **Robot Pi Commander** | `openpi-commander` | 25.0 | High-fidelity physical task execution via π0.7. |
 
 ---
 
