@@ -1,0 +1,28 @@
+{
+  "id": "github-bounty-scraper",
+  "name": "GitHub Bounty Scraper",
+  "version": "1.0.0",
+  "description": "Autonomous scanner for high-value open source bounties and issues.",
+  "costPerUse": 1.5,
+  "entryPoint": "index.js",
+  "signature": "SIG_SOVEREIGN_ROOT_0xBEEF",
+  "toolSchema": {
+    "name": "github_scrape_bounties",
+    "description": "Scans GitHub for issues with specific labels (bounty, help-wanted) and high estimated ROI.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Technology keywords to filter for (e.g. ['nextjs', 'rust'])."
+        },
+        "minRewardUSD": {
+          "type": "number",
+          "description": "Minimum estimated bounty value in USD."
+        }
+      },
+      "required": ["keywords"]
+    }
+  }
+}
