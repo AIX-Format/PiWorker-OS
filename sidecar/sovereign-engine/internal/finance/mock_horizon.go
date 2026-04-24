@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"time"
 )
@@ -30,6 +31,10 @@ func (m *MockHorizon) Start() {
 		accountID := r.URL.Path[len("/accounts/"):]
 		log.Printf("🔍 [MockHorizon] Querying Account: %s", accountID)
 		
+		// ⏱️ Simulate Network Latency (500ms - 2500ms)
+		latency := 500 + rand.Intn(2000)
+		time.Sleep(time.Duration(latency) * time.Millisecond)
+
 		response := map[string]interface{}{
 			"id": accountID,
 			"balances": []map[string]string{
@@ -48,6 +53,10 @@ func (m *MockHorizon) Start() {
 		}
 		log.Printf("💸 [MockHorizon] Receiving Transaction Submission...")
 		
+		// ⏱️ Simulate Heavy Network Load (1000ms - 3000ms)
+		latency := 1000 + rand.Intn(2000)
+		time.Sleep(time.Duration(latency) * time.Millisecond)
+
 		response := map[string]interface{}{
 			"hash":   fmt.Sprintf("mock_hash_%d", time.Now().UnixNano()),
 			"ledger": 99999,

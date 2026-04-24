@@ -6,6 +6,8 @@ import (
 	"log"
 	"net"
 	"os"
+	"sync"
+	"time"
 
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/bridge"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/crypto"
@@ -46,6 +48,8 @@ func authInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServe
 		return nil, status.Errorf(codes.Unauthenticated, "[SEC_ERROR] Missing metadata")
 	}
 
+	tokens := md["sovereign-auth-token"]
+
 	expectedToken := os.Getenv("SOVEREIGN_AUTH_TOKEN")
 	if expectedToken == "" {
 		log.Printf("❌ [FATAL] SOVEREIGN_AUTH_TOKEN is not set. Security lockdown engaged.")
@@ -66,6 +70,8 @@ type sovereignServer struct {
 	geminiClient  *bridge.GeminiClient
 	sandboxEngine *sandbox.NeuralSandbox
 	fiscalQueue   *finance.FiscalQueue
+	mu            sync.RWMutex
+	txListeners   []chan finance.QueuedTx
 }
 
 func newSovereignServer(ctx context.Context) (*sovereignServer, error) {
@@ -85,6 +91,7 @@ func newSovereignServer(ctx context.Context) (*sovereignServer, error) {
 		geminiClient:  gc,
 		sandboxEngine: sandbox.NewNeuralSandbox(5 * time.Second),
 		fiscalQueue:   queue,
+		txListeners:   []chan finance.QueuedTx{},
 	}, nil
 }
 
@@ -219,14 +226,26 @@ func (s *sovereignServer) CommitPayment(ctx context.Context, req *pb.PaymentRequ
 
 	// 💾 [Persistence] Push to Sovereign Fiscal Queue before execution
 	if s.fiscalQueue != nil {
-		s.fiscalQueue.Push(finance.QueuedTx{
+		tx := finance.QueuedTx{
 			ID:        fmt.Sprintf("tx_%d", time.Now().UnixNano()),
 			AgentID:   "AGENT_SOVEREIGN",
 			Amount:    req.AmountPi,
 			Target:    req.RecipientId,
 			Timestamp: time.Now(),
 			Status:    "PENDING",
-		})
+		}
+		s.fiscalQueue.Push(tx)
+
+		// 📡 [Broadcast] Send to all SSE listeners (Dual-Channel pattern)
+		s.mu.RLock()
+		for _, ch := range s.txListeners {
+			select {
+			case ch <- tx:
+			default:
+				// Skip if listener is slow or buffer full
+			}
+		}
+		s.mu.RUnlock()
 	}
 
 	nodeURL := os.Getenv("PI_NODE_URL")
@@ -306,17 +325,36 @@ func (s *sovereignServer) handleEvents(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("📡 [SSE] Brain connected to Muscle event stream.")
 
-	// Simulated execution stream
-	// In production, this would hook into a channel or event bus
-	for i := 0; i < 5; i++ {
-		event := fmt.Sprintf(`{"event": "EXECUTION_UPDATE", "step": %d, "status": "ACTIVE"}`, i+1)
-		fmt.Fprintf(w, "data: %s\n\n", event)
-		flusher.Flush()
-		time.Sleep(1 * time.Second)
+	// Register listener
+	ch := make(chan finance.QueuedTx, 100)
+	s.mu.Lock()
+	s.txListeners = append(s.txListeners, ch)
+	s.mu.Unlock()
+
+	// Unregister on exit
+	defer func() {
+		s.mu.Lock()
+		for i, listener := range s.txListeners {
+			if listener == ch {
+				s.txListeners = append(s.txListeners[:i], s.txListeners[i+1:]...)
+				break
+			}
+		}
+		s.mu.Unlock()
+		close(ch)
+		log.Printf("📡 [SSE] Brain disconnected from Muscle stream.")
+	}()
+
+	for {
+		select {
+		case tx := <-ch:
+			data, _ := json.Marshal(tx)
+			fmt.Fprintf(w, "data: %s\n\n", string(data))
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
 	}
-	
-	fmt.Fprintf(w, "data: {\"event\": \"COMPLETED\"}\n\n")
-	flusher.Flush()
 }
 
 func loadmTLSCreds() (*tls.Config, error) {
