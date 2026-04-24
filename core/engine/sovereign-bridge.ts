@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import { TelemetryLogger } from "../utils/telemetry-logger";
 import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
@@ -81,10 +82,20 @@ export class SovereignBridge {
       });
       const sovereignProto = grpc.loadPackageDefinition(packageDefinition).sovereign as any;
 
-      // Use SSL in production, Insecure only for local dev with strict token
+      // 🔒 [mTLS] Load certificates for Neural Vault Security
+      const caCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/ca.crt'));
+      const clientCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.crt'));
+      const clientKey = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.key'));
+
+      const sslCreds = grpc.credentials.createSsl(
+        caCert,
+        clientKey,
+        clientCert
+      );
+
       this.client = new sovereignProto.SovereignService(
         this.ENGINE_URL,
-        grpc.credentials.createInsecure(), 
+        sslCreds, 
         {
           "grpc.primary_user_agent": "PiWorker-Orchestrator/2.0",
           "grpc.default_authority": "axiev.org"

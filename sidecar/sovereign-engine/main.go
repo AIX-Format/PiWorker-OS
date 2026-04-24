@@ -10,10 +10,13 @@ import (
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/bridge"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/engine"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/finance"
+	"crypto/tls"
+	"crypto/x509"
 	pb "github.com/Moeabdelaziz007/PiWorker-OS/sovereign-engine/internal/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
 )
@@ -179,8 +182,30 @@ func main() {
 		log.Fatalf("failed to start sovereign server: %v", err)
 	}
 
-	// PRO PATCH: Add the Auth Interceptor to the gRPC server
+	// 🔒 [mTLS] Load certificates for Neural Vault Security
+	certificate, err := tls.LoadX509KeyPair("sidecar/sovereign-engine/certs/server.crt", "sidecar/sovereign-engine/certs/server.key")
+	if err != nil {
+		log.Fatalf("failed to load server key pair: %v", err)
+	}
+
+	certPool := x509.NewCertPool()
+	ca, err := os.ReadFile("sidecar/sovereign-engine/certs/ca.crt")
+	if err != nil {
+		log.Fatalf("failed to read ca cert: %v", err)
+	}
+	if ok := certPool.AppendCertsFromPEM(ca); !ok {
+		log.Fatalf("failed to append ca certs")
+	}
+
+	tlsConfig := &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    certPool,
+	}
+
+	// PRO PATCH: Add the Auth Interceptor and TLS to the gRPC server
 	grpcServer := grpc.NewServer(
+		grpc.Creds(credentials.NewTLS(tlsConfig)),
 		grpc.UnaryInterceptor(authInterceptor),
 	)
 	pb.RegisterSovereignServiceServer(grpcServer, server)
