@@ -58,13 +58,29 @@ export class QuantumMirror {
       modelVersion: "gemini-1.5-pro"
     });
 
+    // 🧠 [Dynamic Reasoning] Use a risk-adjusted ROI instead of a hardcoded threshold.
+    // Logic: If (Revenue * Confidence) > (Average Historical Revenue), then proceed.
+    const historicalInsights = NeuralMemoryMesh.query("simulation_report");
+    const avgHistoricalRevenue = historicalInsights.length > 0 
+      ? historicalInsights.reduce((sum, i) => sum + (i.data.expectedRevenue || 0), 0) / historicalInsights.length
+      : 1000; // Default baseline if no history
+
+    const riskAdjustedRevenue = response.estimatedRevenueUsd * (1.0 - (response.riskScore / 10));
+    
+    let recommendation: 'proceed' | 'caution' | 'abort' = 'caution';
+    if (response.riskScore > 8) {
+      recommendation = 'abort';
+    } else if (riskAdjustedRevenue > avgHistoricalRevenue * 1.2) {
+      recommendation = 'proceed';
+    }
+
     const consensus: CompressedSimulation = {
-      topPaths: [[]], // Placeholder for path extraction
+      topPaths: [[]], 
       expectedRevenue: response.estimatedRevenueUsd,
       expectedRisk: response.riskScore,
       overallConfidence: 1.0 - (response.riskScore / 10),
-      recommendation: response.estimatedRevenueUsd > 1500 ? 'proceed' : 'caution',
-      reasoning: response.strategyRecommendation,
+      recommendation,
+      reasoning: `[Quantum Analysis] ${response.strategyRecommendation}. Risk-Adjusted ROI: $${riskAdjustedRevenue.toFixed(2)} vs Baseline: $${avgHistoricalRevenue.toFixed(2)}.`,
       simulationDepthDays
     };
 
@@ -77,6 +93,7 @@ export class QuantumMirror {
         task: skill.name,
         recommendation: consensus.recommendation,
         expectedRisk: consensus.expectedRisk,
+        expectedRevenue: consensus.expectedRevenue,
         engine: "Go-Sovereign-V2"
       },
       signature: `SIG_SIM_GO_${agent.id}`,
