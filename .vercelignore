@@ -1,7 +1,8 @@
 # Vercel Ignore: Sovereign Assets
 sidecar/
 !sidecar/sovereign-engine/proto/
-scripts/
+# Allow build scripts
+!scripts/
 bin/
 # Allow api/ functions
 !api/

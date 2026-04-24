@@ -43,8 +43,8 @@
 - [x] **Master Build Orchestrator**: `scripts/sovereign-build.sh` implemented and integrated.
 - [x] **Zero-Error CI Pipeline**: Strict TS/Go checks and automated deployment trigger.
 - [x] **The Sandbox Audit**: Integrated Playwright E2E tests and Go engine service container into GitHub Actions.
-- [x] **Live Vercel Deployment**: FIXED. Identified that `.vercelignore` was blocking `go.mod`, preventing Vercel from detecting the Go runtime. Switched to zero-config auto-detection and downgraded Go to `1.22` for peak compatibility.
-- [x] **Deep Research Audit**: Confirmed Vercel's modern Go pipeline requires `go.mod` at root and fails with "valid version" error if manual configs conflict with auto-detection or if modules are ignored.
+- [x] **Live Vercel Deployment**: FIXED. Identified that `.vercelignore` was blocking `go.mod` and `scripts/`, causing both runtime and build errors. Un-ignored both and stabilized Go version to `1.22`.
+- [x] **Deep Research Audit**: Confirmed Vercel's requirement for `go.mod` at root and the necessity of allowing build-time script dependencies in `.vercelignore`.
 - [x] **Communication**: 🌍 Switched to Arabic as per user request. Technical operations remain in English/TypeScript/Go.
 
 ### Infrastructure & Security Status
