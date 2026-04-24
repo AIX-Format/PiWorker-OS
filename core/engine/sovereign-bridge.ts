@@ -333,4 +333,44 @@ export class SovereignBridge {
       throw new Error(`Sovereign Gateway Error: ${error.message}`);
     }
   }
+
+  /**
+   * Listens to the Sovereign Event Stream (SSE).
+   * Used to receive real-time updates from the Muscle (Go Engine).
+   */
+  public static listenToEvents(onEvent: (data: any) => void): void {
+    console.log(`📡 [Bridge] Subscribing to Muscle Event Stream...`);
+    const eventUrl = `${this.GATEWAY_URL}/api/events`;
+
+    // In a browser environment, use EventSource. In Node.js, we simulate or use axios stream.
+    axios({
+      method: 'get',
+      url: eventUrl,
+      responseType: 'stream'
+    }).then(response => {
+      response.data.on('data', (chunk: any) => {
+        const line = chunk.toString();
+        if (line.startsWith('data: ')) {
+          try {
+            const data = JSON.parse(line.replace('data: ', '').trim());
+            onEvent(data);
+          } catch (e) {
+            // Partial data or non-JSON
+          }
+        }
+      });
+    }).catch(err => {
+      console.error(`❌ [Bridge] SSE Subscription Failed: ${err.message}`);
+    });
+  }
+
+  /**
+   * [Brain Pattern] Executes AI reasoning directly in the Orchestrator.
+   * This offloads cognitive tasks from the Go Engine to the Cloud-friendly Next.js layer.
+   */
+  public static async reason(prompt: string): Promise<string> {
+    console.log(`🧠 [Brain] Initiating Cognitive Task...`);
+    // Placeholder for direct Gemini Integration in Next.js
+    return `Reasoning Result for: ${prompt}`;
+  }
 }

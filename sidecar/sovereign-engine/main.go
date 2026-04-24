@@ -65,6 +65,7 @@ type sovereignServer struct {
 	quantumMirror *engine.QuantumMirror
 	geminiClient  *bridge.GeminiClient
 	sandboxEngine *sandbox.NeuralSandbox
+	fiscalQueue   *finance.FiscalQueue
 }
 
 func newSovereignServer(ctx context.Context) (*sovereignServer, error) {
@@ -74,10 +75,16 @@ func newSovereignServer(ctx context.Context) (*sovereignServer, error) {
 		return nil, fmt.Errorf("failed to init gemini: %w", err)
 	}
 
+	queue, err := finance.NewFiscalQueue("data/fiscal")
+	if err != nil {
+		log.Printf("⚠️ [Finance] Could not initialize queue: %v", err)
+	}
+
 	return &sovereignServer{
 		quantumMirror: engine.NewQuantumMirror(gc),
 		geminiClient:  gc,
 		sandboxEngine: sandbox.NewNeuralSandbox(5 * time.Second),
+		fiscalQueue:   queue,
 	}, nil
 }
 
@@ -210,9 +217,21 @@ func (s *sovereignServer) CommitPayment(ctx context.Context, req *pb.PaymentRequ
 		}, nil
 	}
 
+	// 💾 [Persistence] Push to Sovereign Fiscal Queue before execution
+	if s.fiscalQueue != nil {
+		s.fiscalQueue.Push(finance.QueuedTx{
+			ID:        fmt.Sprintf("tx_%d", time.Now().UnixNano()),
+			AgentID:   "AGENT_SOVEREIGN",
+			Amount:    req.AmountPi,
+			Target:    req.RecipientId,
+			Timestamp: time.Now(),
+			Status:    "PENDING",
+		})
+	}
+
 	nodeURL := os.Getenv("PI_NODE_URL")
 	if nodeURL == "" {
-		nodeURL = "https://api.testnet.minepi.com"
+		nodeURL = "http://localhost:8000" // Point to Mock Horizon by default if missing
 	}
 	maker := finance.NewPaymentMaker(nodeURL)
 	txID, err := maker.ExecuteSovereignPayment(ctx, finance.PaymentRequest{
@@ -270,6 +289,34 @@ func (s *sovereignServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	
 	w.Header().Set("Content-Type", "text/plain")
 	w.Write([]byte(encryptedRes))
+}
+
+// 📡 [SSE Bridge] Stream Events from Muscle to Brain
+func (s *sovereignServer) handleEvents(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("📡 [SSE] Brain connected to Muscle event stream.")
+
+	// Simulated execution stream
+	// In production, this would hook into a channel or event bus
+	for i := 0; i < 5; i++ {
+		event := fmt.Sprintf(`{"event": "EXECUTION_UPDATE", "step": %d, "status": "ACTIVE"}`, i+1)
+		fmt.Fprintf(w, "data: %s\n\n", event)
+		flusher.Flush()
+		time.Sleep(1 * time.Second)
+	}
+	
+	fmt.Fprintf(w, "data: {\"event\": \"COMPLETED\"}\n\n")
+	flusher.Flush()
 }
 
 func loadmTLSCreds() (*tls.Config, error) {
@@ -364,7 +411,19 @@ func main() {
 		httpPort = "50052"
 	}
 	log.Printf("🌐 [Gateway] Sovereign HTTP/1.1 Bridge online at :%s", httpPort)
-	if err := http.ListenAndServe(":"+httpPort, server); err != nil {
+	
+	// Register SSE and standard Gateway
+	mux := http.NewServeMux()
+	mux.Handle("/api/intent", server)
+	mux.HandleFunc("/api/events", server.handleEvents)
+
+	// 🧪 [Fiscal Bridge] Start Mock Horizon Server in Dev Mode
+	if os.Getenv("MAS_ZERO_MODE") == "SIMULATION" || os.Getenv("PI_NODE_URL") == "" {
+		mockHorizon := finance.NewMockHorizon("8000")
+		go mockHorizon.Start()
+	}
+
+	if err := http.ListenAndServe(":"+httpPort, mux); err != nil {
 		log.Fatalf("failed to serve http: %v", err)
 	}
 }
