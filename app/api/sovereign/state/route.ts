@@ -1,60 +1,68 @@
 import { NextResponse } from 'next/server';
 import { SovereignBridge } from '@/core/engine/sovereign-bridge';
+import { AmrikyyTreasury } from '@/core/finance/treasury-vault';
+import { fleetManager } from '@/core/agents/fleet-manager';
 
 /**
  * AMRIKYY LAB :: SOVEREIGN STATE BRIDGE API
  * ROUTE: /api/sovereign/state
- * PURPOSE: Bridges the Dashboard (UI) to the Go Sovereign Engine (gRPC).
+ * PURPOSE: Bridges the Dashboard (UI) to the internal core and Go engine.
+ * VERIFIABILITY: NO MOCK DATA.
  */
 
 export async function GET() {
   try {
-    // 🛡️ [Steel Gate] In a production scenario, we'd verify a session here.
-    
-    // We request a simulation summary or engine status to populate the dashboard
-    // For now, we'll try to fetch a high-level state.
-    // If the engine is offline, SovereignBridge will throw, and we'll handle it.
+    // 1. Fetch Real Treasury Data (Durable Storage)
+    const treasuryStats = await AmrikyyTreasury.getStats();
 
-    // Since our current proto doesn't have a "GetFullState" method yet, 
-    // we'll simulate the aggregation from the TS side using the bridge calls.
-    
-    // 💡 TACTICAL NOTE: We use the bridge to ensure mTLS and Auth are applied.
-    
-    // Example: Trigger a small simulation to verify engine heartbeat
-    const heartbeat = await SovereignBridge.requestSimulation({
-      goalId: "HEARTBEAT_" + Date.now(),
-      parallelInstances: 1,
-      modelVersion: "gemini-1.5-pro"
-    });
+    // 2. Fetch Real Fleet Metrics (Agent Registry)
+    const fleetMetrics = await fleetManager.getMetrics();
+    const allAgents = await fleetManager.getAllAgents();
 
-    const mockState = {
+    // 3. Heartbeat: Verify Go Engine Connectivity
+    let engineStatus = 'ONLINE';
+    let engineHealth: any = null;
+    
+    try {
+      engineHealth = await SovereignBridge.getSystemStatus();
+    } catch (err) {
+      engineStatus = 'DEGRADED';
+    }
+
+    const sovereignState = {
       treasury: {
-        reserves: heartbeat.estimatedRevenueUsd > 0 ? heartbeat.estimatedRevenueUsd : 125840.42,
-        status: 'SHIELDED',
+        reserves: treasuryStats.reserves.Pi || 0,
+        otherReserves: treasuryStats.reserves,
+        status: treasuryStats.status,
+        lastAudit: treasuryStats.lastAudit,
       },
       fleet: {
-        count: 32,
-        active: 28,
-        ready: 4,
-        agents: [
-          { agentId: 'AGENT-ZERO', status: 'EXECUTING', performance: 0.99 },
-          { agentId: 'AGENT-PRIME', status: 'OBSERVING', performance: 0.94 },
-          { agentId: 'AGENT-GOPHER', status: 'SYNCING', performance: 0.91 },
-        ],
+        count: fleetMetrics.total,
+        active: fleetMetrics.active,
+        ready: fleetMetrics.ready,
+        agents: allAgents.map(a => ({
+          agentId: a.id,
+          name: a.name,
+          status: a.status.toUpperCase(),
+          performance: a.dna.fitnessScore / 100,
+          role: a.role
+        })),
       },
-      logs: [
-        `[BRIDGE] Heartbeat confirmed via Go Engine.`,
-        `[ROI] ${heartbeat.predictedRoi}x predicted for current cycle.`,
-        `[LOG] ${heartbeat.strategyRecommendation}`,
-      ],
+      engine: {
+        status: engineStatus,
+        pi_balance: engineHealth?.pi_balance || 0,
+        active_intents: engineHealth?.active_intents || 0,
+      },
+      isSimulated: false,
+      timestamp: new Date().toISOString(),
     };
 
-    return NextResponse.json(mockState);
+    return NextResponse.json(sovereignState);
   } catch (err: any) {
-    console.error("[API_BRIDGE_ERROR] Sovereign Engine unreachable:", err.message);
+    console.error("[API_BRIDGE_ERROR] Sovereign State Aggregation Failed:", err.message);
     return NextResponse.json(
-      { error: "Sovereign Engine Offline", message: err.message },
-      { status: 503 }
+      { error: "Sovereign State Error", message: err.message },
+      { status: 500 }
     );
   }
 }
