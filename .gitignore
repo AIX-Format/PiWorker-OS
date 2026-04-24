@@ -83,3 +83,8 @@ sidecar/sovereign-engine/.go-cache/
 !package.json
 !tsconfig.json
 !package-lock.json
+# Security Certificates (Neural Vault)
+*.key
+*.pem
+infra/certs/
+sidecar/sovereign-engine/certs/

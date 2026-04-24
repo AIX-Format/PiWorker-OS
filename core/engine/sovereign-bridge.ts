@@ -83,9 +83,19 @@ export class SovereignBridge {
       const sovereignProto = grpc.loadPackageDefinition(packageDefinition).sovereign as any;
 
       // 🔒 [mTLS] Load certificates for Neural Vault Security
-      const caCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/ca.crt'));
-      const clientCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.crt'));
-      const clientKey = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.key'));
+      let caCert, clientCert, clientKey;
+
+      if (process.env.SOVEREIGN_CA_CERT) {
+        // Priority 1: Environment Variables
+        caCert = Buffer.from(process.env.SOVEREIGN_CA_CERT, 'utf-8');
+        clientCert = Buffer.from(process.env.SOVEREIGN_CLIENT_CERT || '', 'utf-8');
+        clientKey = Buffer.from(process.env.SOVEREIGN_CLIENT_KEY || '', 'utf-8');
+      } else {
+        // Priority 2: Local Files (Dev)
+        caCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/ca.crt'));
+        clientCert = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.crt'));
+        clientKey = fs.readFileSync(path.join(process.cwd(), 'infra/certs/client.key'));
+      }
 
       const sslCreds = grpc.credentials.createSsl(
         caCert,

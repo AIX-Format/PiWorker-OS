@@ -25,5 +25,23 @@ To maintain sovereignty, the following environment variables MUST be configured 
 - `SOVEREIGN_AUTH_TOKEN`: The bridge-level gRPC metadata token (replaces `DEFAULT_SAFE_TOKEN`).
 
 ## 🚀 Next Steps
-- **mTLS Implementation**: Transition from `createInsecure()` to mutual TLS for the gRPC bridge.
-- **Process Isolation**: Upgrade the `SandboxExecutor` to use `isolated-vm` or micro-containers.
+- **isolated-vm Implementation**: Transition the `SandboxExecutor` to use `isolated-vm` for memory-level isolation.
+
+## 🛡️ Recent Hardening (2026-04-24)
+
+### 1. Next.js Security Patch (CVE-2025-66478)
+- **Problem**: Next.js 15.0.0 had a high-severity vulnerability.
+- **Fix**: Upgraded `package.json` to `next: 15.1.0`.
+
+### 2. Ring 5: Neural Vault (mTLS)
+- **Problem**: gRPC traffic was encrypted but lacked mutual authentication (mTLS).
+- **Fix**: 
+    - Implemented **mTLS** in both the Go Engine and TS Bridge.
+    - Added support for loading certificates from Environment Variables for Serverless compatibility.
+    - Certificates are now enforced at the gRPC layer (Step 1 of Steel Gate).
+
+## 🔑 Required Configuration (Update)
+The following MUST be added to Vercel/Production:
+- `SOVEREIGN_CA_CERT`: Content of `ca.crt`
+- `SOVEREIGN_SERVER_CERT` / `SOVEREIGN_SERVER_KEY`: For the Go Engine
+- `SOVEREIGN_CLIENT_CERT` / `SOVEREIGN_CLIENT_KEY`: For the TS Orchestrator

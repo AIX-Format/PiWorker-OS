@@ -165,6 +165,48 @@ func (s *sovereignServer) CommitPayment(ctx context.Context, req *pb.PaymentRequ
 	}, nil
 }
 
+func loadmTLSCreds() (*tls.Config, error) {
+	var serverCert, serverKey, caCert []byte
+	var err error
+
+	// Priority 1: Environment Variables (For Vercel/Cloud)
+	if os.Getenv("SOVEREIGN_SERVER_CERT") != "" {
+		serverCert = []byte(os.Getenv("SOVEREIGN_SERVER_CERT"))
+		serverKey = []byte(os.Getenv("SOVEREIGN_SERVER_KEY"))
+		caCert = []byte(os.Getenv("SOVEREIGN_CA_CERT"))
+	} else {
+		// Priority 2: Local Files
+		serverCert, err = os.ReadFile("sidecar/sovereign-engine/certs/server.crt")
+		if err != nil {
+			return nil, err
+		}
+		serverKey, err = os.ReadFile("sidecar/sovereign-engine/certs/server.key")
+		if err != nil {
+			return nil, err
+		}
+		caCert, err = os.ReadFile("sidecar/sovereign-engine/certs/ca.crt")
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	certificate, err := tls.X509KeyPair(serverCert, serverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	certPool := x509.NewCertPool()
+	if ok := certPool.AppendCertsFromPEM(caCert); !ok {
+		return nil, fmt.Errorf("failed to append CA cert")
+	}
+
+	return &tls.Config{
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		Certificates: []tls.Certificate{certificate},
+		ClientCAs:    certPool,
+	}, nil
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -183,24 +225,9 @@ func main() {
 	}
 
 	// 🔒 [mTLS] Load certificates for Neural Vault Security
-	certificate, err := tls.LoadX509KeyPair("sidecar/sovereign-engine/certs/server.crt", "sidecar/sovereign-engine/certs/server.key")
+	tlsConfig, err := loadmTLSCreds()
 	if err != nil {
-		log.Fatalf("failed to load server key pair: %v", err)
-	}
-
-	certPool := x509.NewCertPool()
-	ca, err := os.ReadFile("sidecar/sovereign-engine/certs/ca.crt")
-	if err != nil {
-		log.Fatalf("failed to read ca cert: %v", err)
-	}
-	if ok := certPool.AppendCertsFromPEM(ca); !ok {
-		log.Fatalf("failed to append ca certs")
-	}
-
-	tlsConfig := &tls.Config{
-		ClientAuth:   tls.RequireAndVerifyClientCert,
-		Certificates: []tls.Certificate{certificate},
-		ClientCAs:    certPool,
+		log.Fatalf("failed to load mTLS credentials: %v", err)
 	}
 
 	// PRO PATCH: Add the Auth Interceptor and TLS to the gRPC server
