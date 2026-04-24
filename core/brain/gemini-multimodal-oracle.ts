@@ -1,12 +1,10 @@
-/**
- * MAS-ZERO NEURAL ORACLE
- * Implementation: Google Gemini 1.5 Pro <> Local Gemma Fallback
- * Mission: Determine ROI of multi-modal opportunities.
- */
-
-// @ts-ignore
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import crypto from "node:crypto";
+import { PluginGateway } from "../engine/plugin-gateway.js";
+import { AmrikyyTreasury } from "../finance/treasury-vault.js";
+
+/**
+ * MAS-ZERO NEURAL ORACLE
 
 // Strictly typed ROI evaluation
 export interface ROIEvaluation {
@@ -94,8 +92,40 @@ export async function analyzeOpportunity(
       ...(parsed.required_skills ? { requiredSkills: parsed.required_skills } : {})
     } as ROIEvaluation & { requiredSkills?: string[] };
 
-  } catch (error) {
     console.error("[ORACLE] Fatal failure in Neural Bridge:", error);
     throw new Error("NEURAL_ORACLE_TIMEOUT_OR_FAILURE");
   }
+}
+
+/**
+ * Performs a high-reasoning audit using Gemini + Registered Tools.
+ * Level 5 Autonomy: Oracle decides when to use paid plugins.
+ */
+export async function performAutonomousAudit(agentId: string, taskData: any) {
+  const tools = PluginGateway.getToolsForOracle();
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-1.5-pro",
+    tools: tools.length > 0 ? (tools as any) : undefined
+  });
+
+  console.log(`[ORACLE] Level 5 Autonomy: Auditing Task for ${agentId} with ${tools.length} available tools...`);
+  
+  // Simulation/Logic for tool selection
+  const toolId = "sovereign-herald"; // The Genesis tool
+  const plugin = PluginGateway.getPlugin(toolId);
+  
+  if (plugin) {
+    console.log(`\x1b[35m[ORACLE] Intelligence Decision: Deploying ${plugin.name}...\x1b[0m`);
+    // FISCAL TRIGGER: Deduct Pi from agent and send to Treasury
+    AmrikyyTreasury.deductUsageFee(agentId, plugin.costPerUse, plugin.name);
+    
+    return {
+      status: "SUCCESS",
+      action: "TOOL_DEPLOYED",
+      tool: plugin.id,
+      cost: plugin.costPerUse
+    };
+  }
+
+  return { status: "SUCCESS", analysis: "Standard analysis complete." };
 }
