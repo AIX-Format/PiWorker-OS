@@ -30,9 +30,10 @@ class FleetManager {
    */
   async evaluateScaling() {
     const stats = AmrikyyTreasury.getStats();
-    console.log(`[FLEET_MANAGER] Scaling Evaluation: Reserve at ${stats.reserve} Pi.`);
+    const totalReserves = Object.values(stats.reserves).reduce((a, b) => a + b, 0);
+    console.log(`[FLEET_MANAGER] Scaling Evaluation: Reserve at ${totalReserves} Pi.`);
 
-    if (stats.reserve >= 200 && this.fleet.size < 10) {
+    if (totalReserves >= 200 && this.fleet.size < 10) {
       console.log("\x1b[1m\x1b[32m[SCALING] Wealth threshold met. Spawning new Sovereign Agent...\x1b[0m");
       const specializations: AgentSpecialization[] = ["BountyHunter", "MarketingSpecialist", "CodeAuditor"];
       const randomSpec = specializations[Math.floor(Math.random() * specializations.length)];

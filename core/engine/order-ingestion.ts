@@ -4,7 +4,11 @@
  * Mission: Evaluate, Assign, and Escrow Micro-SaaS Tasks.
  */
 
-import crypto from "node:crypto";
+// Only import crypto on server-side
+let crypto: any;
+if (typeof window === 'undefined') {
+  crypto = require("node:crypto");
+}
 
 export interface SaaSOrder {
   orderId: string;
@@ -23,6 +27,11 @@ const PendingTaskQueue: SaaSOrder[] = [];
  * Ingests a new Micro-SaaS order from the marketplace.
  */
 export async function ingestSaaSOrder(customerUid: string, agentId: string, price: number): Promise<SaaSOrder> {
+  // Ensure we're in a server environment
+  if (typeof window !== 'undefined') {
+    throw new Error('ingestSaaSOrder can only be called on the server');
+  }
+  
   const order: SaaSOrder = {
     orderId: `ord-${crypto.randomBytes(4).toString("hex")}`,
     customerUid,

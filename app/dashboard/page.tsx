@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { OmniTerminal } from '@/app/components/omni-terminal';
 import { Cpu, AlertCircle } from 'lucide-react';
+import { fetchSovereignStateWithFallback } from '@/app/lib/sovereign-mock-provider';
 
 /**
  * AMRIKYY LAB :: SOVEREIGN DASHBOARD V3
@@ -14,21 +15,15 @@ import { Cpu, AlertCircle } from 'lucide-react';
 export default function SovereignDashboard() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [isSimulated, setIsSimulated] = useState(false);
 
-  // Live Data Polling (Every 5 seconds)
+  // Live Data Polling (Every 5 seconds) - with automatic fallback to mock data
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const res = await fetch('/api/sovereign-state');
-        const json = await res.json();
-        if (json.success) {
-          setData(json.state);
-        }
-      } catch (err) {
-        console.error("Dashboard sync error:", err);
-      } finally {
-        setLoading(false);
-      }
+      const result = await fetchSovereignStateWithFallback();
+      setData(result.data);
+      setIsSimulated(result.isSimulated);
+      setLoading(false);
     };
 
     fetchData();
@@ -101,9 +96,20 @@ export default function SovereignDashboard() {
               <div className="text-xs uppercase tracking-wider text-gray-600">
                 System Heartbeat
               </div>
-              <div className="text-lg font-bold text-green-500 flex items-center justify-end gap-2">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                OPERATIONAL
+              <div className="flex flex-col items-end gap-1">
+                <div className="text-lg font-bold text-green-500 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  OPERATIONAL
+                </div>
+                {isSimulated && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs px-2 py-1 bg-purple-500/20 border border-purple-500/40 rounded text-purple-400 uppercase tracking-wider font-bold"
+                  >
+                    SIMULATION MODE
+                  </motion.div>
+                )}
               </div>
             </motion.div>
           </div>

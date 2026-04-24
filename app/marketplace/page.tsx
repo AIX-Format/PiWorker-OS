@@ -44,16 +44,19 @@ export default function SovereignMarketplace() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleHire = async (agentId: string) => {
-    if (!user) {
+    let currentUser = user;
+    if (!currentUser) {
       const auth = await authenticateSovereignWallet();
-      if (auth) setUser({ username: auth.user.username, uid: auth.user.uid });
-      else return;
+      if (auth) {
+        setUser({ username: auth.username, uid: auth.uid });
+        currentUser = { username: auth.username, uid: auth.uid };
+      } else return;
     }
 
     setIsProcessing(true);
     const agent = AGENT_PRODUCTS.find(a => a.id === agentId);
-    if (agent) {
-      const order = await ingestSaaSOrder(user.uid, agentId, agent.price);
+    if (agent && currentUser) {
+      const order = await ingestSaaSOrder(currentUser.uid, agentId, agent.price);
       setCart([...cart, order.orderId]);
     }
     setIsProcessing(false);

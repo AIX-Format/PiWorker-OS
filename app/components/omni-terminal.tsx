@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Cpu, Zap, Database, Send } from 'lucide-react';
+import { Brain, Cpu, Zap, Database, Send, Mic } from 'lucide-react';
+import { useAetherVoice } from '@/app/hooks/useAetherVoice';
 
 interface ExecutionPhase {
   id: string;
@@ -21,6 +22,7 @@ interface TelemetryEntry {
 
 export function OmniTerminal() {
   const [input, setInput] = useState('');
+  const voice = useAetherVoice();
   const [executionPhases, setExecutionPhases] = useState<ExecutionPhase[]>([
     { id: '1', name: 'Prompt', icon: <Brain size={18} />, status: 'pending' },
     { id: '2', name: 'Plan', icon: <Cpu size={18} />, status: 'pending' },
@@ -131,6 +133,34 @@ export function OmniTerminal() {
               className="w-full bg-black/40 border border-green-500/20 rounded px-3 py-2 pl-6 text-white font-mono text-sm focus:outline-none focus:border-green-500/50 focus:shadow-lg focus:shadow-green-500/20 transition-all"
             />
           </div>
+          
+          {/* Voice Command Button - Aether Voice Scaffold */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => voice.startListening()}
+            className={`border rounded px-3 py-2 font-bold uppercase text-xs transition-all flex items-center gap-2 ${
+              voice.state.isListening
+                ? 'bg-purple-500/20 border-purple-500/60 text-purple-500'
+                : 'bg-purple-500/10 border-purple-500/30 text-purple-400 hover:bg-purple-500/20 hover:border-purple-500/60'
+            }`}
+            style={{
+              boxShadow: voice.state.isListening
+                ? 'inset 0 0 10px rgba(168, 85, 247, 0.2), 0 0 15px rgba(168, 85, 247, 0.3)'
+                : 'inset 0 0 10px rgba(168, 85, 247, 0.1)',
+            }}
+            title="Aether Voice Command Interface"
+          >
+            {voice.state.isListening ? (
+              <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity }}>
+                <Mic size={16} />
+              </motion.div>
+            ) : (
+              <Mic size={16} />
+            )}
+            {voice.state.isListening ? 'LISTENING' : 'VOICE'}
+          </motion.button>
+
           <motion.button
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
