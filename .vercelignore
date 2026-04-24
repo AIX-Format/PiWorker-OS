@@ -1,0 +1,12 @@
+# Vercel Ignore: Sovereign Assets
+sidecar/
+scripts/
+bin/
+*.go
+go.mod
+go.sum
+proto/
+.git/
+node_modules/
+.next/
+out/

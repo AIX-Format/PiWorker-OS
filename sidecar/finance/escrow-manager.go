@@ -1,62 +1,93 @@
 package finance
 
 import (
+	"context"
 	"fmt"
+	"sync"
 	"time"
-	"crypto/sha256"
-	"encoding/hex"
 )
 
-// EscrowManager handles time-locked Pi funds in the sidecar.
-// Clean Room Protocol: Direct interaction with Soroban smart contract logic.
+// EscrowStatus represents the state of a financial transaction
+type EscrowStatus string
 
-type EscrowAgreement struct {
-	AgreementID string
-	AgentID     string
-	Amount      float64
-	LockTime    time.Time
-	Status      string // LOCKED, RELEASED, REVERTED, PHYSICAL_PENDING
+const (
+	StatusPending   EscrowStatus = "PENDING"
+	StatusLocked    EscrowStatus = "LOCKED"
+	StatusReleased  EscrowStatus = "RELEASED"
+	StatusRefunded  EscrowStatus = "REFUNDED"
+)
+
+// Transaction represents a sovereign financial operation
+type Transaction struct {
+	ID        string
+	AgentID   string
+	AmountPi  float64
+	Status    EscrowStatus
+	CreatedAt time.Time
 }
 
-/**
- * LockPiFunds creates a time-locked escrow on the Pi Network (Soroban).
- */
-func LockPiFunds(amount float64, agentID string, isPhysical bool) (*EscrowAgreement, error) {
-	fmt.Printf("[ESCROW_KERNEL] Locking %.4f Pi for Agent %s...\n", amount, agentID)
-
-	hash := sha256.Sum256([]byte(fmt.Sprintf("%s|%.4f|%d", agentID, amount, time.Now().Unix())))
-	agreementID := "esc_" + hex.EncodeToString(hash[:8])
-
-	status := "LOCKED"
-	if isPhysical {
-		status = "PHYSICAL_PENDING"
-	}
-
-	agreement := &EscrowAgreement{
-		AgreementID: agreementID,
-		AgentID:     agentID,
-		Amount:      amount,
-		LockTime:    time.Now().Add(24 * time.Hour),
-		Status:      status,
-	}
-
-	fmt.Printf("[ESCROW_KERNEL] Soroban Contract Call: lock_funds(%s, %.4f, physical=%v)\n", agreementID, amount, isPhysical)
-	
-	go monitorEscrow(agreement)
-
-	return agreement, nil
+// EscrowManager handles high-speed financial security
+type EscrowManager struct {
+	mu           sync.RWMutex
+	transactions map[string]*Transaction
 }
 
-/**
- * ReleasePhysicalEscrow settles the payment ONLY after visual verification by MAS-ZERO Oracle.
- */
-func ReleasePhysicalEscrow(agreementID string) error {
-	fmt.Printf("[ESCROW_KERNEL] 🛡️ Settling Physical PoPW for Agreement %s...\n", agreementID)
-	// In real environment, this triggers the 'release' method on the Soroban contract
-	fmt.Printf("[ESCROW_KERNEL] SUCCESS: Pi payment released to Robot DID wallet.\n")
+func NewEscrowManager() *EscrowManager {
+	return &EscrowManager{
+		transactions: make(map[string]*Transaction),
+	}
+}
+
+// LockFunds secures Pi coins in a virtual escrow for an agent task
+func (em *EscrowManager) LockFunds(ctx context.Context, txID string, agentID string, amount float64) error {
+	em.mu.Lock()
+	defer em.mu.Unlock()
+
+	if _, exists := em.transactions[txID]; exists {
+		return fmt.Errorf("transaction %s already exists", txID)
+	}
+
+	em.transactions[txID] = &Transaction{
+		ID:        txID,
+		AgentID:   agentID,
+		AmountPi:  amount,
+		Status:    StatusLocked,
+		CreatedAt: time.Now(),
+	}
+
+	fmt.Printf("🔒 [Escrow] Funds Locked: %.4f Pi for Agent %s (TX: %s)\n", amount, agentID, txID)
 	return nil
 }
 
-func monitorEscrow(a *EscrowAgreement) {
-	fmt.Printf("[ESCROW_KERNEL] Monitoring Agreement %s for release triggers...\n", a.AgreementID)
+// ReleaseFunds completes the payment once the 'Critic' agent approves the work
+func (em *EscrowManager) ReleaseFunds(txID string) (float64, error) {
+	em.mu.Lock()
+	defer em.mu.Unlock()
+
+	tx, exists := em.transactions[txID]
+	if !exists {
+		return 0, fmt.Errorf("transaction %s not found", txID)
+	}
+
+	if tx.Status != StatusLocked {
+		return 0, fmt.Errorf("transaction %s is not in LOCKED state", txID)
+	}
+
+	tx.Status = StatusReleased
+	fmt.Printf("💸 [Escrow] Funds Released: %.4f Pi (TX: %s)\n", tx.AmountPi, txID)
+	return tx.AmountPi, nil
+}
+
+// AuditTrail returns the history of transactions for a specific agent
+func (em *EscrowManager) AuditTrail(agentID string) []*Transaction {
+	em.mu.RLock()
+	defer em.mu.RUnlock()
+
+	var history []*Transaction
+	for _, tx := range em.transactions {
+		if tx.AgentID == agentID {
+			history = append(history, tx)
+		}
+	}
+	return history
 }

@@ -16,6 +16,7 @@ import { AssetRegistry, AIXAsset } from "../finance/asset-registry";
 import { OpenPiAdapter } from "../../sidecar/physical-bridge/openpi-adapter";
 import { EconomicRiskLevel } from "../governance-engine";
 import { NeuralMemoryMesh } from "../brain/neural-memory";
+import { SovereignBridge } from "./sovereign-bridge";
 
 /**
  * PiWorker-OS MASOrchestrator
@@ -67,8 +68,14 @@ export class MASOrchestrator extends EventEmitter {
       );
       console.log(`[Strategy] ${strategy}`);
 
-      // 1. مرحلة المحاكاة (Quantum Mirror)
-      const simResult = await this.mirror.dryRunTask(executor, skill, taskData);
+      // 1. مرحلة المحاكاة (Go Sovereign Engine Sidecar)
+      // Delegating to Go to prevent Node.js event loop collapse during 30-persona simulation
+      const simResult = await SovereignBridge.requestSimulation({
+        goalId: `task_${Date.now()}`,
+        prompt: `Simulate execution for skill ${skill.name} with data: ${JSON.stringify(taskData)}`,
+        parallelInstances: 30
+      });
+      
       this.emit(OrchestrationEvent.SIMULATION_PASSED, simResult);
 
       // 1.5 تفعيل البروتوكول الفيزيائي إذا لزم الأمر
@@ -160,7 +167,7 @@ export class MASOrchestrator extends EventEmitter {
             await this.executeAgentStep(step, resolvedAgents);
             break;
           case "robot":
-            await this.executeRobotStep(step, resolvedAgents.executor);
+            await this.dispatchEmbodiedIntent(step, resolvedAgents.executor);
             break;
           case "finance":
             await this.executeFinanceStep(step);
@@ -196,7 +203,7 @@ export class MASOrchestrator extends EventEmitter {
     return { ceo, executor, critic };
   }
 
-  private createSyntheticAgent(name: string, role: AgentRole, specialization: any): Agent {
+  private createSyntheticAgent(name: string, role: AgentRole, specialization: string): Agent {
     return {
       id: `pw-agt-${crypto.randomBytes(6).toString("hex")}`,
       name,
@@ -239,19 +246,57 @@ export class MASOrchestrator extends EventEmitter {
     await this.orchestrateTask(agents.ceo, agents.executor, agents.critic, mockSkill, step.parameters);
   }
 
-  private async executeRobotStep(step: PlanStep, executor: Agent) {
-    console.log(`[Robot] 🤖 Dispatched VLA Action: ${step.action}`);
-    this.emit(OrchestrationEvent.PHYSICAL_ACTION_INITIATED, { executor, action: step.action, parameters: step.parameters });
+  /**
+   * إرسال نية مجسدة (Embodied Intent) إلى الطبقة الفيزيائية عبر محرك Go
+   */
+  private async dispatchEmbodiedIntent(step: PlanStep, executor: Agent) {
+    console.log(`[π0.7] 🤖 Assembling Embodied Intent for: ${step.action}`);
     
-    const adapter = OpenPiAdapter.getInstance();
-    const success = await adapter.dispatchTask(step.action, step.action);
-    
-    if (!success) {
-      throw new Error(`[Orchestrator] ❌ Physical Execution Failed for step: ${step.id}`);
-    }
+    // محاكاة تجميع تدفق مرئي (Visual Subgoals)
+    const visualData = [
+      Buffer.from("feature_vector_01"),
+      Buffer.from("depth_map_01"),
+      Buffer.from("object_mask_01")
+    ];
 
-    // محاكاة وقت التنفيذ الفيزيائي
-    await new Promise(r => setTimeout(r, 2000));
+    try {
+      const response = await SovereignBridge.sendEmbodiedIntent({
+        intentId: `intent_${crypto.randomBytes(4).toString("hex")}`,
+        agentId: executor.id,
+        subtaskLanguage: step.action,
+        executionMetadata: {
+          speed: "0.8",
+          precision: "high",
+          safety_protocol: "active"
+        },
+        controlMode: "autonomous",
+        visualSubgoals: visualData
+      });
+
+      if (!response.accepted) {
+        throw new Error(`[π0.7] Intent Rejected: ${response.statusMessage}`);
+      }
+
+      console.log(`[π0.7] ✅ Intent Accepted by Go Engine. Tracking: ${response.trackingId}`);
+      
+      // Emit event for UI synchronization
+      this.emit(OrchestrationEvent.PHYSICAL_ACTION_INITIATED, { 
+        executor, 
+        action: step.action, 
+        trackingId: response.trackingId 
+      });
+
+    } catch (error) {
+      console.error(`[π0.7] ❌ Failed to dispatch embodied intent:`, error);
+      throw error;
+    }
+  }
+
+  private async executeRobotStep(step: PlanStep, executor: Agent) {
+    // Legacy local adapter - kept for backward compatibility if bridge fails
+    console.log(`[Robot] 🤖 Dispatched Legacy VLA Action: ${step.action}`);
+    const adapter = OpenPiAdapter.getInstance();
+    await adapter.dispatchTask(step.action, step.action);
   }
 
   private async executeFinanceStep(step: PlanStep) {
@@ -274,7 +319,7 @@ export class MASOrchestrator extends EventEmitter {
   /**
    * توليد الختم السيادي للمخرج التقني
    */
-  private signExecutionResult(agent: Agent, output: any) {
+  private signExecutionResult(agent: Agent, output: Record<string, unknown>) {
     const taskHash = crypto.createHash("sha256").update(JSON.stringify(output)).digest("hex");
     const mockPrivateKey = crypto.createHash("sha256").update(agent.id).digest("hex");
     const signature = crypto.createHmac("sha256", mockPrivateKey).update(taskHash).digest("hex");

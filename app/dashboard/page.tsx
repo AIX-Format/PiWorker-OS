@@ -12,8 +12,26 @@ import { fetchSovereignStateWithFallback } from '@/app/lib/sovereign-mock-provid
  * LAYOUT: 3-COLUMN TACTICAL SYSTEM
  * STATUS: ELITE SOVEREIGN CONTROL PLANE ACTIVE
  */
+interface SovereignState {
+  treasury: {
+    reserves: number;
+    status: string;
+  };
+  fleet: {
+    count: number;
+    active: number;
+    ready: number;
+    agents: Array<{
+      agentId: string;
+      status: string;
+      performance: number;
+    }>;
+  };
+  logs: string[];
+}
+
 export default function SovereignDashboard() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<SovereignState | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSimulated, setIsSimulated] = useState(false);
 

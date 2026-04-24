@@ -4,19 +4,37 @@ import crypto from "node:crypto";
  * Sovereign Signer (Refined) - Task Signature Protocol
  * Implements Invocation-Bound Capability Tokens (IBCT) logic from AIP.
  */
+export interface SovereignEnvelope {
+  agent_did: string;
+  task_hash: string;
+  timestamp: number;
+  capability_overlay: Record<string, unknown>;
+  trust_score: number;
+  attestation_hash: string;
+  delegation_chain: string[];
+  signature: string;
+  v: string;
+}
+
+export interface ActionParams {
+  agentDID: string;
+  privateKey: string;
+  payload: Record<string, unknown>;
+  capabilityOverlay?: Record<string, unknown>;
+  trustScore: number;
+  attestationHash: string;
+}
+
+/**
+ * Sovereign Signer (Refined) - Task Signature Protocol
+ * Implements Invocation-Bound Capability Tokens (IBCT) logic from AIP.
+ */
 export class SovereignSigner {
   /**
    * Generates a Sovereign Task Signature Envelope.
    * Wraps identity, capability attenuation, and trust metrics.
    */
-  static signAction(params: {
-    agentDID: string;
-    privateKey: string;
-    payload: any;
-    capabilityOverlay?: any;
-    trustScore: number;
-    attestationHash: string;
-  }) {
+  static signAction(params: ActionParams): SovereignEnvelope {
     const { agentDID, privateKey, payload, capabilityOverlay, trustScore, attestationHash } = params;
     const timestamp = Date.now();
     
@@ -28,7 +46,7 @@ export class SovereignSigner {
       capability_overlay: capabilityOverlay || { scope: "standard" },
       trust_score: trustScore,
       attestation_hash: attestationHash,
-      delegation_chain: []
+      delegation_chain: [] as string[]
     };
 
     // 2. Generate Threshold-Ready Signature (Simplified for Clean Room)
@@ -46,7 +64,7 @@ export class SovereignSigner {
   /**
    * Verifies a Sovereign Task Signature.
    */
-  static verifyAction(envelope: any, publicKey: string): boolean {
+  static verifyAction(envelope: SovereignEnvelope, publicKey: string): boolean {
     const { signature, ...claimBundle } = envelope;
     const bundleString = JSON.stringify(claimBundle);
     

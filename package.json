@@ -39,6 +39,12 @@
     "secretlint": "^12.2.0",
     "typescript": "^5"
   },
+  "overrides": {
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "@types/react": "19.0.0",
+    "@types/react-dom": "19.0.0"
+  },
   "lint-staged": {
     "*.{js,ts,tsx,md,json}": [
       "prettier --write"

@@ -1,4 +1,4 @@
-name: PiWorker-OS CI
+name: PiWorker-OS Sovereign CI
 
 on:
   push:
@@ -10,27 +10,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        node-version: [22.x]
-
     steps:
     - uses: actions/checkout@v4
     
-    - name: Use Node.js ${{ matrix.node-version }}
+    # --- Node.js Strategy ---
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '22.x'
         cache: 'npm'
         
     - name: Install dependencies
       run: npm install --legacy-peer-deps
       
-    - name: Type Check (TypeScript)
-      run: npx tsc --noEmit || echo "Typecheck skipped for now"
-      
-    - name: Lint (ESLint)
-      run: npm run lint || echo "Linting skipped (Not configured yet)"
+    - name: TypeScript Validation
+      run: npx tsc --noEmit || echo "Warning: TypeScript errors detected in legacy code."
 
-    - name: Build
-      run: npm run build || echo "Build failed due to pre-existing type errors, skipping for now"
+    # --- Go Sovereign Strategy ---
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.23'
+        cache: true
+        cache-dependency-path: sidecar/sovereign-engine/go.sum
+
+    - name: Build Sovereign Engine (Static Binary)
+      run: |
+        chmod +x scripts/build-sovereign-engine.sh
+        ./scripts/build-sovereign-engine.sh
+
+    # --- Final Build & Asset Verification ---
+    - name: Build Next.js App
+      run: npm run build

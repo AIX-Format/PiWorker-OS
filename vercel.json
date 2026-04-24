@@ -1,0 +1,15 @@
+{
+  "framework": "nextjs",
+  "rewrites": [
+    { "source": "/api/sovereign/(.*)", "destination": "/api/sovereign/$1" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Sovereign-State", "value": "Amrikyy-Lab" },
+        { "key": "X-Robots-Tag", "value": "index, follow" }
+      ]
+    }
+  ]
+}

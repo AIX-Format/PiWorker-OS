@@ -9,6 +9,13 @@ export interface PiUser {
   accessToken: string;
 }
 
+interface PiSDK {
+  authenticate: (scopes: string[], onIncompletePaymentFound: (payment: unknown) => void) => Promise<{
+    user: { uid: string; username: string };
+    accessToken: string;
+  }>;
+}
+
 /**
  * Initiates the sovereign wallet authentication flow.
  * Scopes: payments, username
@@ -22,7 +29,7 @@ export async function authenticateSovereignWallet(): Promise<PiUser> {
       return;
     }
 
-    const win = globalThis.window as any;
+    const win = globalThis.window as unknown as { Pi: PiSDK };
     if (!win.Pi) {
       reject(new Error("Pi Network SDK not found in window context."));
       return;
@@ -31,7 +38,7 @@ export async function authenticateSovereignWallet(): Promise<PiUser> {
     const Pi = win.Pi;
 
     Pi.authenticate(['payments', 'username'], onIncompletePaymentFound)
-      .then((auth: any) => {
+      .then((auth) => {
         // AMRIKYY_SECURITY: We return the user data for in-memory processing.
         // DO NOT store the accessToken in plain text.
         resolve({
@@ -40,7 +47,7 @@ export async function authenticateSovereignWallet(): Promise<PiUser> {
           accessToken: auth.accessToken
         });
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         console.error("[PI_AUTH] Sovereign Failure:", err);
         reject(err);
       });
@@ -50,7 +57,8 @@ export async function authenticateSovereignWallet(): Promise<PiUser> {
 /**
  * Handle incomplete payments to ensure financial integrity.
  */
-function onIncompletePaymentFound(payment: any) {
-  console.warn("[PI_FINANCE] Incomplete payment detected for tx:", payment.identifier);
+function onIncompletePaymentFound(payment: unknown) {
+  const p = payment as { identifier: string };
+  console.warn("[PI_FINANCE] Incomplete payment detected for tx:", p?.identifier);
   // Future implementation: Resolve via backend check.
 }

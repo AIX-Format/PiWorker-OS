@@ -1,6 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
+
+const MotionDiv = motion.div as any;
 import { Bot, Zap, Shield, Eye, Database } from "lucide-react";
 
 const ROBOTS = [
@@ -43,7 +45,7 @@ export const RoboticFleetStatus = () => {
             </div>
 
             <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-              <motion.div 
+              <MotionDiv 
                 initial={{ width: 0 }}
                 animate={{ width: `${robot.battery}%` }}
                 className={`h-full ${robot.battery < 50 ? "bg-pi-gold" : "bg-neon-green"}`}

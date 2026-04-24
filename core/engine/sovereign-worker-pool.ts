@@ -4,13 +4,20 @@ import { GemmaAdapter } from "../brain/gemma-adapter";
 import { Skill } from "../types/skill";
 import crypto from "node:crypto";
 
+interface Job {
+  id: string;
+  type: string;
+  payload: Record<string, unknown>;
+  priority: number;
+}
+
 /**
  * SovereignWorkerPool - The Heartbeat of PiWorker-OS
  * Coordinates the Golden Trio (CEO, Executor, Critic) for autonomous execution.
  */
 export class SovereignWorkerPool {
   private static instance: SovereignWorkerPool;
-  private jobQueue: Array<{ id: string, type: string, payload: any, priority: number }> = [];
+  private jobQueue: Job[] = [];
   private brain: GemmaAdapter;
   private memory: typeof NeuralMemoryMesh;
 
@@ -31,7 +38,7 @@ export class SovereignWorkerPool {
   /**
    * Enqueues a new autonomous task.
    */
-  public async enqueue(type: string, payload: any, priority: number = 1) {
+  public async enqueue(type: string, payload: Record<string, unknown>, priority: number = 1) {
     const jobId = `job-${crypto.randomBytes(4).toString("hex")}`;
     this.jobQueue.push({ id: jobId, type, payload, priority });
     this.jobQueue.sort((a, b) => b.priority - a.priority);

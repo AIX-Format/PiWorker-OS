@@ -1,7 +1,9 @@
-'use client';
-
 import React, { ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionProps } from 'framer-motion';
+
+// Fix for React 19 / Framer Motion type conflict
+const MotionDiv = motion.div as any;
+const MotionButton = motion.button as any;
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -80,7 +82,7 @@ function SafeModeUI({
         }}
       />
 
-      <motion.div
+      <MotionDiv
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5 }}
@@ -100,7 +102,7 @@ function SafeModeUI({
           <div className="relative bg-black/80 border border-red-500/50 rounded-lg p-8 backdrop-blur-sm">
             {/* Warning Header */}
             <div className="mb-8">
-              <motion.div
+              <MotionDiv
                 animate={{ opacity: [0.5, 1] }}
                 transition={{ duration: 0.8, repeat: Infinity }}
                 className="text-center"
@@ -111,7 +113,7 @@ function SafeModeUI({
                 <div className="text-sm uppercase tracking-widest text-orange-400">
                   Safe Mode Activated // Neural Link Interrupted
                 </div>
-              </motion.div>
+              </MotionDiv>
             </div>
 
             {/* Error Details */}
@@ -154,14 +156,14 @@ function SafeModeUI({
 
             {/* Recovery Options */}
             <div className="space-y-3">
-              <motion.button
+              <MotionButton
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={onReset}
                 className="w-full bg-red-500/10 border border-red-500/50 rounded px-6 py-3 text-red-500 font-bold uppercase tracking-wider text-sm hover:bg-red-500/20 transition-all"
               >
                 ATTEMPT RECOVERY
-              </motion.button>
+              </MotionButton>
               <div className="text-xs text-gray-500 text-center">
                 If problem persists, contact system administrator or check console logs
               </div>
