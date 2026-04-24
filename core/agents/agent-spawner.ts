@@ -25,6 +25,20 @@ export interface AgentInstance {
   identity: AgentIdentity;
 }
 
+import { AixPackage } from "../engine/aix-foundry";
+
+/**
+ * Spawns an agent from a standardized .aix package.
+ */
+export async function spawnFromAix(aixData: AixPackage): Promise<AgentInstance> {
+  console.log(`[SPAWNER] Materializing Agent from AIX: ${aixData.header.name} (v${aixData.header.version})`);
+  
+  return spawnAgent(
+    aixData.dna.specialization as AgentSpecialization,
+    aixData.dna.basePrice * 0.5 // Initial budget derived from asset value
+  );
+}
+
 /**
  * Spawns a new agent instance and registers it in the Sovereign Ledger.
  */

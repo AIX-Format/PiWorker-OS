@@ -55,7 +55,20 @@ async function runSovereignBootstrap() {
       
       console.log(`[CYCLE ${cycleCount}] Profit Harvested: ${inflow.taxAmount.toFixed(2)} Pi added to Reserve.`);
       
-      // C. Cooldown
+      // C. AIX FOUNDRY CYCLE (Manufacturing)
+      if (cycleCount % 3 === 0) { // Every 3 cycles, evaluate for export
+        const foundry = await import("./core/engine/aix-foundry.js");
+        const fleet = await import("./core/agents/fleet-manager.js");
+        const topAgents = fleet.fleetManager.getAllAgents();
+        
+        if (topAgents.length > 0) {
+          const target = topAgents[Math.floor(Math.random() * topAgents.length)];
+          const price = 50 + Math.floor(Math.random() * 150);
+          await foundry.AixFoundry.compile(target, price);
+        }
+      }
+
+      // D. Cooldown
       cycleCount++;
       await new Promise(resolve => setTimeout(resolve, 30000)); // 30s Heartbeat
     }
