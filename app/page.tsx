@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { usePi } from "./components/pi-provider";
 import { authenticateSovereignWallet } from "@/core/finance/pi-auth";
 import { SovereignAuditLog } from "./components/visualizers/sovereign-audit-log";
-import { BrainCircuit, Activity, Boxes, Network } from "lucide-react";
+import { BrainCircuit, Boxes, Network } from "lucide-react";
 
 export default function SovereignCommandCenter() {
   const [logs, setLogs] = useState<string[]>([
@@ -438,7 +438,7 @@ export default function SovereignCommandCenter() {
                     transition={{ delay: i * 0.5 }}
                     className="text-[9px] font-mono text-white/60 flex items-center gap-2"
                   >
-                    <span className="text-neon-green">>></span> {item.text}
+                    <span className="text-neon-green">{">>"}</span> {item.text}
                   </motion.div>
                 ))}
               </div>
