@@ -9,11 +9,6 @@
       "destination": "/api/index.go"
     }
   ],
-  "functions": {
-    "api/*.go": {
-      "runtime": "@vercel/go"
-    }
-  },
   "env": {
     "NEXT_PUBLIC_APP_URL": "https://axiomid.app"
   }

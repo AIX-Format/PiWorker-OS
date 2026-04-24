@@ -43,8 +43,8 @@
 - [x] **Master Build Orchestrator**: `scripts/sovereign-build.sh` implemented and integrated.
 - [x] **Zero-Error CI Pipeline**: Strict TS/Go checks and automated deployment trigger.
 - [x] **The Sandbox Audit**: Integrated Playwright E2E tests and Go engine service container into GitHub Actions.
-- [x] **Live Vercel Deployment**: Refined runtime to `@vercel/go` after initializing root `go.mod`. Resolved "valid version" error by using the namespaced package.
-- [x] **Git Sync Protocol**: Instructed user on `git pull --rebase` to resolve branch divergence and explained the critical role of `go.mod` in modern Vercel infra.
+- [x] **Live Vercel Deployment**: FIXED. Identified that `.vercelignore` was blocking `go.mod`, preventing Vercel from detecting the Go runtime. Switched to zero-config auto-detection and downgraded Go to `1.22` for peak compatibility.
+- [x] **Deep Research Audit**: Confirmed Vercel's modern Go pipeline requires `go.mod` at root and fails with "valid version" error if manual configs conflict with auto-detection or if modules are ignored.
 - [x] **Communication**: 🌍 Switched to Arabic as per user request. Technical operations remain in English/TypeScript/Go.
 
 ### Infrastructure & Security Status
@@ -55,3 +55,16 @@
 ### Pro-Tip: Local CI Testing
 - Use `act` to run GitHub Actions locally before pushing. This saves build minutes and ensures privacy. (Requires installation: `brew install act`).
 - **Build Report**: Automated logging of build metadata to `build_report_*.log`.
+
+### 🔍 Deep Research Findings (2026-04-24)
+- **Root Cause**: The file `.vercelignore` explicitly listed `go.mod` and `go.sum`. This caused Vercel to clone the repo but EXCLUDE the module definitions from the build environment.
+- **Legacy Fallback**: Without `go.mod`, Vercel failed to identify the correct builder for `/api/*.go`, triggering the legacy error message about "valid version" (e.g., `now-php@1.0.0`).
+- **Fix Path**: 
+  1. Un-ignore `go.mod` in `.vercelignore`.
+  2. Use `go 1.22` in `go.mod` (maximum stability).
+  3. Delete `functions` configuration in `vercel.json` to allow clean auto-detection.
+
+**Git Metadata**:
+- Repo: `https://github.com/Moeabdelaziz007/PiWorker-OS.git`
+- Branch: `main`
+- Last Hash: `989985c3a1ae519d9e597115f0cf71068e780b75`

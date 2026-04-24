@@ -5,8 +5,9 @@ scripts/
 bin/
 # Allow api/ functions
 !api/
-go.mod
-go.sum
+# Allow Go module files for runtime detection
+!go.mod
+!go.sum
 !proto/
 .git/
 node_modules/
