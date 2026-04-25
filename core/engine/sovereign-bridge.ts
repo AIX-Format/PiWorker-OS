@@ -158,6 +158,25 @@ export class SovereignBridge {
     });
   }
 
+  /**
+   * إرسال نية مجسدة (Embodied Intent) إلى محرك Go للتحكم الفيزيائي
+   */
+  public static async sendEmbodiedIntent(req: EmbodiedIntentRequest): Promise<IntentResponse> {
+    console.log(`🤖 [Bridge] Sending Embodied Intent ${req.intentId} to Go Engine...`);
+    const client = this.getClient();
+
+    if (!client) {
+      return this.callViaHttp('intent', req);
+    }
+
+    return new Promise((resolve, reject) => {
+      client.SendEmbodiedIntent(req, this.getMetadata(), (error: any, response: any) => {
+        if (error) return reject(error);
+        resolve(response as IntentResponse);
+      });
+    });
+  }
+
   public static async executePlugin(req: PluginRequest): Promise<PluginResponse> {
     console.log(`🛡️ [Bridge] Delegating Sandbox Execution for ${req.pluginId} to Go...`);
     PluginSchema.parse(req);

@@ -104,8 +104,10 @@ export class MASOrchestrator extends EventEmitter {
       } else {
         // 🧬 Evolution: Reward success
         executor.dna.fitnessScore = Math.min(100, executor.dna.fitnessScore + 2);
-        executor.metrics.tasksCompleted += 1;
-        executor.metrics.totalProfit += (actualRoi - 1.0) * 100; // Simulated profit contribution
+        if (executor.metrics) {
+          executor.metrics.tasksCompleted += 1;
+          executor.metrics.totalProfit += (actualRoi - 1.0) * 100;
+        }
         
         const registry = await AgentRegistry.getInstance();
         await registry.registerAgent(executor);
