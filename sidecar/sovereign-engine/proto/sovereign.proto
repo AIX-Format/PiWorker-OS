@@ -27,6 +27,15 @@ service SovereignService {
   // Pi-402 Agentic Payment Protocol
   rpc AuthorizeAgentSubWallet(SubWalletRequest) returns (SubWalletResponse);
   rpc ProcessAgentPayment(AgentPaymentRequest) returns (AgentPaymentResponse);
+
+  // KYA & AIX Identity Protocol
+  rpc IssueAIXPassport(KYARequest) returns (AIXPassport);
+  rpc VerifyAIXPassport(VerifyKYARequest) returns (VerifyKYAResponse);
+
+  // Intent-Based Escrow & Bounties
+  rpc CreateIntentBounty(IntentBountyRequest) returns (IntentBountyResponse);
+  rpc ResolveIntentBounty(ResolveBountyRequest) returns (ResolveBountyResponse);
+  rpc GetActiveBounties(BountyQuery) returns (BountyList);
 }
 
 // --- Simulation Logic ---
@@ -127,6 +136,8 @@ message PluginResponse {
   string output_json = 3;
   string error_message = 4;
   int64 execution_time_ms = 5;
+}
+
 // --- Memory Layer ---
 
 message MemoryInsight {
@@ -180,4 +191,81 @@ message AgentPaymentResponse {
 
 message MemoryList {
   repeated MemoryInsight insights = 1;
+}
+
+// --- KYA & AIX Identity Layer ---
+
+message KYARequest {
+  string agent_id = 1;
+  string owner_pi_id = 2;
+  string kyc_proof_token = 3; // From Pi KYC service
+}
+
+message AIXPassport {
+  string agent_id = 1;
+  string owner_pi_id = 2;
+  string issuance_date = 3;
+  string expiry_date = 4;
+  string kyc_status = 5;
+  string zkp_commitment = 6;
+  string signature = 7; // Sovereign Engine Signature
+  map<string, string> attributes = 8;
+}
+
+message VerifyKYARequest {
+  AIXPassport passport = 1;
+  string challenge = 2;
+  string agent_signature = 3; // Signature of the challenge by the agent
+}
+
+message VerifyKYAResponse {
+  bool valid = 1;
+  string verification_message = 2;
+  string owner_verification_level = 3;
+}
+
+// --- Intent-Based Escrow & Bounties ---
+
+message IntentBountyRequest {
+  string creator_id = 1;
+  string intent_description = 2;
+  double amount_pi = 3;
+  string expiry = 4;
+  map<string, string> constraints = 5;
+}
+
+message IntentBountyResponse {
+  string bounty_id = 1;
+  string escrow_address = 2;
+  bool success = 3;
+}
+
+message ResolveBountyRequest {
+  string bounty_id = 1;
+  string solver_id = 2;
+  string proof_data = 3;
+  string solver_signature = 4;
+}
+
+message ResolveBountyResponse {
+  bool released = 1;
+  string tx_hash = 2;
+  string status = 3;
+}
+
+message BountyQuery {
+  string creator_id = 1;
+  string status = 2;
+}
+
+message BountyList {
+  repeated IntentBounty bounties = 1;
+}
+
+message IntentBounty {
+  string bounty_id = 1;
+  string creator_id = 2;
+  string description = 3;
+  double amount_pi = 4;
+  string status = 5;
 }

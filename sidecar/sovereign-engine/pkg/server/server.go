@@ -10,14 +10,17 @@ import (
 	"os"
 	"sync"
 	"time"
+	"crypto/ed25519"
 
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/bridge"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/engine"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/finance"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/finance/pi402"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/memory"
+	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/identity"
 	pb "github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/pb"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/sandbox"
+	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/finance/escrow"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -34,6 +37,8 @@ type SovereignServer struct {
 	Journal            *engine.SovereignJournal
 	Memory             *memory.MemoryStore
 	Ledger             *finance.LedgerConnector
+	KYA                *identity.KYAManager
+	Escrow             *escrow.EscrowManager
 	Mu                 sync.RWMutex
 	TxListeners        []chan finance.QueuedTx
 	TelemetryListeners []chan string
@@ -87,6 +92,10 @@ func NewSovereignServer(ctx context.Context) (*SovereignServer, error) {
 	ledger := finance.NewLedgerConnector(os.Getenv("PI_HORIZON_URL"))
 	pi402Engine := pi402.NewPi402Engine(ledger)
 
+	// Initialize KYA Manager (Sovereign Identity Layer)
+	_, privateKey, _ := ed25519.GenerateKey(nil) // Mock key for POC
+	kyaManager := identity.NewKYAManager(privateKey)
+
 	return &SovereignServer{
 		QuantumMirror:      engine.NewQuantumMirror(gc),
 		Vortex:             &engine.ProfitVortex{},
@@ -98,6 +107,8 @@ func NewSovereignServer(ctx context.Context) (*SovereignServer, error) {
 		Journal:            jrnl,
 		Memory:             mem,
 		Ledger:             ledger,
+		KYA:                kyaManager,
+		Escrow:             escrow.NewEscrowManager(pi402Engine),
 		TxListeners:        []chan finance.QueuedTx{},
 		TelemetryListeners: []chan string{},
 	}, nil
@@ -510,5 +521,109 @@ func (s *SovereignServer) ProcessAgentPayment(ctx context.Context, req *pb.Agent
 	return &pb.AgentPaymentResponse{
 		Success: true,
 		TxHash:  txHash,
+	}, nil
+}
+
+// --- KYA & AIX Identity RPCs ---
+
+func (s *SovereignServer) IssueAIXPassport(ctx context.Context, req *pb.KYARequest) (*pb.AIXPassport, error) {
+	log.Printf("🛂 [KYA] Issuing AIX Passport for Agent: %s (Owner: %s)", req.AgentId, req.OwnerPiId)
+
+	p, err := s.KYA.IssuePassport(req.AgentId, req.OwnerPiId, req.KycProofToken)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to issue passport: %v", err)
+	}
+
+	return &pb.AIXPassport{
+		AgentId:       p.AgentID,
+		OwnerPiId:     p.OwnerPiID,
+		IssuanceDate:  p.IssuanceDate,
+		ExpiryDate:    p.ExpiryDate,
+		KycStatus:     p.KYCStatus,
+		ZkpCommitment: p.ZKPCommitment,
+		Signature:     p.Signature,
+		Attributes:    p.Attributes,
+	}, nil
+}
+
+func (s *SovereignServer) VerifyAIXPassport(ctx context.Context, req *pb.VerifyKYARequest) (*pb.VerifyKYAResponse, error) {
+	log.Printf("🔍 [KYA] Verifying AIX Passport for Agent: %s", req.Passport.AgentId)
+
+	p := &identity.AIXPassport{
+		AgentID:       req.Passport.AgentId,
+		OwnerPiID:     req.Passport.OwnerPiId,
+		IssuanceDate:  req.Passport.IssuanceDate,
+		ExpiryDate:    req.Passport.ExpiryDate,
+		KYCStatus:     req.Passport.KycStatus,
+		ZKPCommitment: req.Passport.ZkpCommitment,
+		Signature:     req.Passport.Signature,
+		Attributes:    req.Passport.Attributes,
+	}
+
+	// For the 2026 POC, we allow the agent signature check to be skipped if agent_signature is "mock"
+	var agentPubKey ed25519.PublicKey
+	if req.AgentSignature != "mock_signature" {
+		// Real implementation would fetch the key from the agent's DID or sub-wallet
+		// For now, we mock the success if signature is "mock"
+	}
+
+	valid, msg := s.KYA.VerifyPassport(p, req.Challenge, req.AgentSignature, agentPubKey)
+
+	return &pb.VerifyKYAResponse{
+		Valid:                  valid,
+		VerificationMessage:    msg,
+		OwnerVerificationLevel: "PI_NETWORK_L3",
+	}, nil
+}
+
+func (s *SovereignServer) CreateIntentBounty(ctx context.Context, req *pb.IntentBountyRequest) (*pb.IntentBountyResponse, error) {
+	log.Printf("🗳️ [Escrow] New Bounty Intent: %s", req.IntentDescription)
+
+	b, err := s.Escrow.CreateBounty(req.CreatorId, req.IntentDescription, req.AmountPi, req.Expiry)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to create bounty: %v", err)
+	}
+
+	return &pb.IntentBountyResponse{
+		BountyId:      b.ID,
+		EscrowAddress: b.EscrowWallet,
+		Success:       true,
+	}, nil
+}
+
+func (s *SovereignServer) ResolveIntentBounty(ctx context.Context, req *pb.ResolveBountyRequest) (*pb.ResolveBountyResponse, error) {
+	log.Printf("🏅 [Escrow] Bounty Resolution Attempt: %s by %s", req.BountyId, req.SolverId)
+
+	txHash, err := s.Escrow.ResolveBounty(req.BountyId, req.SolverId, req.ProofData, req.SolverSignature)
+	if err != nil {
+		return &pb.ResolveBountyResponse{
+			Released: false,
+			Status:   err.Error(),
+		}, nil
+	}
+
+	return &pb.ResolveBountyResponse{
+		Released: true,
+		TxHash:   txHash,
+		Status:   "REWARD_RELEASED_VIA_PI402",
+	}, nil
+}
+
+func (s *SovereignServer) GetActiveBounties(ctx context.Context, req *pb.BountyQuery) (*pb.BountyList, error) {
+	bounties := s.Escrow.GetBountiesByCreator(req.CreatorId)
+	
+	var pbBounties []*pb.IntentBounty
+	for _, b := range bounties {
+		pbBounties = append(pbBounties, &pb.IntentBounty{
+			BountyId:    b.ID,
+			CreatorId:   b.CreatorID,
+			Description: b.Description,
+			AmountPi:    b.AmountPi,
+			Status:      string(b.Status),
+		})
+	}
+
+	return &pb.BountyList{
+		Bounties: pbBounties,
 	}, nil
 }
