@@ -81,12 +81,3 @@ export class SandboxManager {
     console.log(`[SandboxManager] Released and Scrubbed Sandbox: ${sandboxId}`);
   }
 }
-
-  /**
-   * Terminates and cleans up the sandbox.
-   * Logic: Zero-trace cleanup.
-   */
-  async release(sandboxId: string): Promise<void> {
-    console.log(`[SandboxManager] Released and Scrubbed Sandbox: ${sandboxId}`);
-  }
-}

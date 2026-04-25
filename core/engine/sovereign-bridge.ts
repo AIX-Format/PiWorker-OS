@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { TelemetryLogger } from "../utils/telemetry-logger";
 import * as grpc from '@grpc/grpc-js';
+import * as protoLoader from '@grpc/proto-loader';
 import path from 'node:path';
 import { PathResolver } from '../utils/path-resolver';
 import { SovereignCipher } from '../utils/sovereign-cipher';
@@ -298,6 +299,8 @@ export class SovereignBridge {
         resolve(response as PluginResponse);
       });
     });
+  }
+
   /**
    * Dispatches an encrypted intent via the Sovereign Gateway (HTTP/1.1).
    * Used for Vercel compatibility and cold-start resilience.

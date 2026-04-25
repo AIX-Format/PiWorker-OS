@@ -2,13 +2,24 @@
 
 import { motion } from "framer-motion";
 import { ShoppingCart, Zap, ShieldCheck, Cpu, Code, Search, ArrowRight } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import { PiLogo } from "@/app/components/ui/pi-logo";
 import { usePi } from "../components/pi-provider";
 import { authenticateSovereignWallet } from "@/core/finance/pi-auth";
 import { ingestSaaSOrder } from "@/core/engine/order-ingestion";
 
+export default function MarketplacePage() {
+  const [mounted, setMounted] = useState(false);
+  const [cart, setCart] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { user, setUser } = usePi();
   const [products, setProducts] = useState<any[]>([]);
+
+  const AGENT_PRODUCTS = [
+    { executor: "ARCHITECT" },
+    { executor: "OPTIMIZER" },
+    { executor: "FISCAL" }
+  ];
 
   React.useEffect(() => {
     setMounted(true);
