@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { OmniTerminal } from '@/app/components/omni-terminal';
 import { Cpu, AlertCircle } from 'lucide-react';
-import { fetchSovereignStateWithFallback } from '@/app/lib/sovereign-mock-provider';
+import { fetchSovereignStateWithFallback, SovereignState } from '@/app/lib/sovereign-mock-provider';
 
 /**
  * AMRIKYY LAB :: SOVEREIGN DASHBOARD V3
@@ -12,24 +12,6 @@ import { fetchSovereignStateWithFallback } from '@/app/lib/sovereign-mock-provid
  * LAYOUT: 3-COLUMN TACTICAL SYSTEM
  * STATUS: ELITE SOVEREIGN CONTROL PLANE ACTIVE
  */
-interface SovereignState {
-  treasury: {
-    reserves: number;
-    status: string;
-  };
-  fleet: {
-    count: number;
-    active: number;
-    ready: number;
-    agents: Array<{
-      agentId: string;
-      status: string;
-      performance: number;
-    }>;
-  };
-  logs: string[];
-}
-
 export default function SovereignDashboard() {
   const [data, setData] = useState<SovereignState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -224,7 +206,7 @@ export default function SovereignDashboard() {
                 Agent Performance
               </h3>
               <div className="space-y-2">
-                {(fleet.agents || []).slice(0, 3).map((agent: any) => (
+                {fleet.agents?.slice(0, 3).map((agent: any) => (
                   <div key={agent.agentId} className="text-xs">
                     <div className="flex justify-between mb-1">
                       <span className="text-gray-400">{agent.agentId}</span>

@@ -1,5 +1,7 @@
+'use client';
+
 import React, { ReactNode } from 'react';
-import { motion, MotionProps } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 // Fix for React 19 / Framer Motion type conflict
 const MotionDiv = motion.div as any;
