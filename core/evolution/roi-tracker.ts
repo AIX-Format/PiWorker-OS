@@ -1,56 +1,43 @@
-export interface AgentDNA {
-  greed: number;     // Efficiency in resource allocation / ROI focus
-  cognition: number; // Success rate in task execution / Reasoning depth
-  trust: number;     // Adherence to Sovereign Protocol
-  cunning: number;   // Creative problem solving / Edge-case handling
-  riskAppetite: number; // Propensity for high-reward/high-risk bounties
-}
+import "server-only";
+import { Agent, AgentDNA } from "../types/agent";
 
 /**
  * Updates Agent DNA based on task outcome (Digital Darwinism).
  * Implements the "Human-Algorithm" philosophy.
  */
-export async function trackAndEvolve(
-  agentId: string,
-  success: boolean,
-  payout?: number
-): Promise<AgentDNA> {
-  console.log(`[DARWINISM] Performance analysis for Agent ${agentId}...`);
+export class ROITracker {
+  /**
+   * Tracks performance and evolves DNA based on ROI outcomes.
+   */
+  static trackAndEvolve(
+    agent: Agent,
+    success: boolean,
+    actualRoi: number
+  ): AgentDNA {
+    const dna = { ...agent.dna };
+    console.log(`[DARWINISM] Performance analysis for Agent ${agent.id}...`);
 
-  // Fetch current state (Simulated)
-  let dna: AgentDNA = { 
-    greed: 0.5, 
-    cognition: 0.5, 
-    trust: 0.9, 
-    cunning: 0.4, 
-    riskAppetite: 0.5 
-  };
+    if (success && actualRoi >= 1.5) {
+      // EVOLUTION: The Winner's Gene
+      dna.greed = Math.min(1, dna.greed + 0.05);      // Gains "Efficiency" through reward
+      dna.cognition = Math.min(1, dna.cognition + 0.02);  // Reinforces reasoning patterns
+      dna.cunning = Math.min(1, dna.cunning + 0.03);    // Creative success increases cunning
+      
+      console.log(`[DARWINISM] SUCCESS: Agent ${agent.id} reinforced efficiency genes.`);
+    } else {
+      // MUTATION: The Failure Catalyst (Digital Darwinism)
+      const severity = actualRoi < 0.5 ? 0.2 : 0.1;
+      
+      dna.cognition = Math.max(0, dna.cognition - severity);  // Penalty to reasoning depth
+      dna.riskAppetite = Math.max(0, dna.riskAppetite - (severity * 2)); // Becomes risk-averse to survive
+      dna.cunning = Math.min(1, dna.cunning + severity);    // "Survival Instinct": Failure triggers cunning
+      
+      console.warn(`[DARWINISM] FAILURE: Agent ${agent.id} triggered adaptive mutation. severity: ${severity}`);
+    }
 
-  if (success && payout) {
-    // EVOLUTION: The Winner's Gene
-    dna.greed += 0.08;      // Gains "Efficiency" through reward
-    dna.cognition += 0.03;  // Reinforces reasoning patterns
-    dna.cunning += 0.05;    // Creative success increases cunning
-    
-    console.log(`[DARWINISM] SUCCESS: Agent ${agentId} acquired "Efficiency" genes. Payout: ${payout} Pi.`);
-  } else {
-    // MUTATION: The Failure Catalyst (Digital Darwinism)
-    console.warn(`[PROFIT_VORTEX] FAILURE: Agent ${agentId} triggered the Vortex.`);
-    
-    dna.cognition -= 0.10;  // Severe penalty to reasoning weight
-    dna.trust -= 0.05;      // Slight trust erosion (monitoring increases)
-    dna.cunning += 0.15;    // "Survival Instinct": Failure triggers extreme cunning mutation
-    dna.riskAppetite -= 0.20; // Becomes risk-averse to survive
-    
-    // THE PROFIT VORTEX: Reclaim Budget
-    console.log(`[PROFIT_VORTEX] Reclaiming remaining Pi Budget from ${agentId} to Amrikyy Lab Treasury.`);
+    dna.fitnessScore = Math.min(100, Math.max(0, actualRoi * 10));
+    dna.generation += 1;
+
+    return dna;
   }
-
-  // Darwinian Boundary Enforcement
-  dna.greed = Math.min(1, Math.max(0, dna.greed));
-  dna.cognition = Math.min(1, Math.max(0, dna.cognition));
-  dna.cunning = Math.min(1, Math.max(0, dna.cunning));
-  dna.riskAppetite = Math.min(1, Math.max(0, dna.riskAppetite));
-
-  return dna;
 }

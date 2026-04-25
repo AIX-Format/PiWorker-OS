@@ -1,3 +1,4 @@
+import "server-only";
 import { EventEmitter } from "events";
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
@@ -18,6 +19,7 @@ import { EconomicRiskLevel } from "../governance-engine";
 import { NeuralMemoryMesh } from "../brain/neural-memory";
 import { SovereignBridge } from "./sovereign-bridge";
 import { AgentRegistry } from "../identity/agent-registry";
+import { SovereignSigner, SovereignEnvelope } from "../identity/sovereign-signer";
 
 /**
  * PiWorker-OS MASOrchestrator
@@ -327,18 +329,17 @@ export class MASOrchestrator extends EventEmitter {
    * توليد الختم السيادي للمخرج التقني
    */
   private signExecutionResult(agent: Agent, output: Record<string, unknown>) {
-    const taskHash = crypto.createHash("sha256").update(JSON.stringify(output)).digest("hex");
-    const mockPrivateKey = crypto.createHash("sha256").update(agent.id).digest("hex");
-    const signature = crypto.createHmac("sha256", mockPrivateKey).update(taskHash).digest("hex");
+    const envelope = SovereignSigner.signAction({
+      agentDID: agent.id,
+      privateKey: crypto.createHash("sha256").update(agent.id).digest("hex"), // Real logic would use a secure vault
+      payload: output,
+      trustScore: agent.dna.fitnessScore,
+      attestationHash: crypto.createHash("sha256").update(JSON.stringify(agent.dna)).digest("hex")
+    });
 
     return {
       output,
-      stamp: {
-        agentId: agent.id,
-        taskHash,
-        timestamp: Date.now(),
-        signature: signature
-      }
+      stamp: envelope
     };
   }
 

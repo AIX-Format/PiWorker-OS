@@ -1,3 +1,4 @@
+import "server-only";
 import { Agent } from "../types/agent";
 import { Skill } from "../types/skill";
 import { SovereignBridge } from "./sovereign-bridge";

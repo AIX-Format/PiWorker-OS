@@ -1,3 +1,4 @@
+import "server-only";
 import crypto from "node:crypto";
 import { TreasuryStorageFactory, TreasuryState, ITreasuryStorage } from "./treasury-storage";
 import { SovereignBridge } from "../engine/sovereign-bridge";

@@ -27,6 +27,12 @@ export const AgentDNASchema = z.object({
     required_error: "DNA الوكيل يتطلب تعليمات برمجية (chromosomes) صريحة",
   }).min(1, "يجب أن يحتوي الـ DNA على كروموسوم واحد على الأقل"),
   
+  // Biological-Economic Traits (Digital Darwinism)
+  greed: z.number().min(0).max(1).default(0.5),      // Efficiency in resource allocation
+  cunning: z.number().min(0).max(1).default(0.5),    // Creative problem solving
+  cognition: z.number().min(0).max(1).default(0.5),  // Success rate / Reasoning depth
+  riskAppetite: z.number().min(0).max(1).default(0.5), // High-reward/high-risk propensity
+
   skillChromosomes: z.array(z.string()).default([]), // For Skills to DNA evolution
   
   mutations: z.array(AgentMutationSchema).default([]),

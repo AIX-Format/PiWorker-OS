@@ -1,3 +1,4 @@
+import "server-only";
 /**
  * MAS-ZERO SOVEREIGN LEDGER
  * Implementation: Append-only Cryptographic Accountability
