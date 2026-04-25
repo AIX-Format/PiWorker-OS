@@ -6,23 +6,29 @@ on:
   pull_request:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v4
-    
+
     # --- Node.js Strategy ---
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '22.x'
         cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm install --legacy-peer-deps
-      
+
+    - name: Verify npm lockfile integrity
+      run: npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+
+    - name: Enforce npm audit policy (fail on high/critical)
+      run: npm audit --audit-level=high --omit=dev
+
     - name: TypeScript Validation
       run: npx tsc --noEmit
 
@@ -30,9 +36,17 @@ jobs:
     - name: Setup Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.24'
+        go-version: '1.25.x'
         cache: true
-        cache-dependency-path: sidecar/sovereign-engine/go.sum
+        cache-dependency-path: go.sum
+
+    - name: Verify Go module integrity
+      run: go mod verify
+
+    - name: Enforce Go vulnerability policy
+      run: |
+        go install golang.org/x/vuln/cmd/govulncheck@latest
+        govulncheck ./...
 
     - name: Build Sovereign Engine (Static Binary)
       run: |
@@ -46,13 +60,13 @@ jobs:
   sandbox-audit:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Build Sovereign Engine Container
       run: docker build -t sovereign-engine:latest sidecar/sovereign-engine/
-      
+
     - name: Run Sovereign Engine Container
       run: |
         docker run -d \
@@ -68,13 +82,13 @@ jobs:
       with:
         node-version: '22.x'
         cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm install --legacy-peer-deps
-      
+
+    - name: Verify npm lockfile integrity
+      run: npm ci --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
-      
+
     - name: Run The Sandbox Audit
       run: npx playwright test tests/sandbox-audit.spec.ts
       env:
