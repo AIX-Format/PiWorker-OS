@@ -49,9 +49,9 @@ export class SovereignSigner {
       delegation_chain: [] as string[]
     };
 
-    // 2. Generate Threshold-Ready Signature (Simplified for Clean Room)
+    // 2. Generate Threshold-Ready Signature (SHA256 with provided key)
     const bundleString = JSON.stringify(claimBundle);
-    const signature = crypto.sign(null, Buffer.from(bundleString), privateKey).toString("hex");
+    const signature = crypto.sign("sha256", Buffer.from(bundleString), privateKey).toString("hex");
 
     // 3. Return the Sovereign Envelope (IBCT Pattern)
     return {
@@ -68,11 +68,16 @@ export class SovereignSigner {
     const { signature, ...claimBundle } = envelope;
     const bundleString = JSON.stringify(claimBundle);
     
-    return crypto.verify(
-      null,
-      Buffer.from(bundleString),
-      publicKey,
-      Buffer.from(signature, "hex")
-    );
+    try {
+      return crypto.verify(
+        "sha256",
+        Buffer.from(bundleString),
+        publicKey,
+        Buffer.from(signature, "hex")
+      );
+    } catch (e: any) {
+      console.error(`[Signer] ❌ Signature Verification CRITICAL ERROR: ${e.message}`);
+      return false;
+    }
   }
 }

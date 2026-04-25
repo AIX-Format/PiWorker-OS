@@ -47,9 +47,17 @@ export default function SovereignCommandCenter() {
 
     // 📊 [Status] Initial fetch and periodic polling
     const fetchStatus = async () => {
-      const stats = await SovereignBridge.getSystemStatus();
-      setLiquidity(stats.pi_balance);
-      setActiveIntents(stats.active_intents);
+      try {
+        const stats = await SovereignBridge.getSystemStatus();
+        if (stats.status === "OFFLINE") {
+          setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> SYSTEM_OFFLINE: Engine not reachable.`]);
+          return;
+        }
+        setLiquidity(stats.pi_balance || 0);
+        setActiveIntents(stats.active_intents || 0);
+      } catch (e: any) {
+        setLogs(prev => [...prev, `[${new Date().toLocaleTimeString()}] >> STATUS_ERROR: ${e.message}`]);
+      }
     };
 
     fetchStatus();

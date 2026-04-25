@@ -1,13 +1,6 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
 import { TelemetryLogger } from "../utils/telemetry-logger";
-import * as grpc from '@grpc/grpc-js';
-import * as protoLoader from '@grpc/proto-loader';
-import path from 'node:path';
-import { PathResolver } from '../utils/path-resolver';
-import { SovereignCipher } from '../utils/sovereign-cipher';
-import axios from 'axios';
 import { PaymentSchema, SimulationSchema, PluginSchema } from './validation';
+import axios from 'axios';
 
 export interface SimulationRequest {
   goalId: string;
@@ -104,54 +97,33 @@ export interface PluginResponse {
  * Connects the TypeScript Orchestrator to the Go Sovereign Engine.
  */
 export class SovereignBridge {
-  private static readonly ENGINE_URL = process.env.SOVEREIGN_ENGINE_URL || "localhost:50051";
-  private static readonly GATEWAY_URL = process.env.SOVEREIGN_GATEWAY_URL || "http://localhost:50052";
+  private static ENGINE_URL: string = process.env.SOVEREIGN_ENGINE_URL || "http://localhost:50051";
+  private static GATEWAY_URL: string = process.env.SOVEREIGN_ENGINE_URL?.replace(':50051', ':8080') || "http://localhost:8080";
   
   private static getAuthToken(): string {
+    if (typeof window !== 'undefined') return "BROWSER_AUTH_PENDING";
     const token = process.env.SOVEREIGN_AUTH_TOKEN;
-    if (!token) return "SOVEREIGN_DEV_TOKEN"; // Fallback for dev
+    if (!token) return "SOVEREIGN_DEV_TOKEN";
     return token;
   }
   
   private static client: any = null;
 
   // Helper to create secure metadata for gRPC calls
-  private static getMetadata(): grpc.Metadata {
-    const metadata = new grpc.Metadata();
-    metadata.add('x-sovereign-token', this.getAuthToken());
-    return metadata;
+  private static async getMetadata(): Promise<any> {
+    const { createMetadata } = await import('./grpc-client');
+    return createMetadata(this.getAuthToken());
   }
 
-  private static getClient() {
-    if (process.env.VERCEL) return null; // Force HTTP on Vercel
-
-    if (!this.client) {
-      try {
-        const PROTO_PATH = PathResolver.getProtoPath();
-        const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
-          keepCase: false,
-          longs: String,
-          enums: String,
-          defaults: true,
-          oneofs: true
-        });
-        const sovereignProto = grpc.loadPackageDefinition(packageDefinition).sovereign as any;
-        const insecureCreds = grpc.credentials.createInsecure();
-
-        this.client = new sovereignProto.SovereignService(
-          this.ENGINE_URL,
-          insecureCreds, 
-          {
-            "grpc.primary_user_agent": "PiWorker-Orchestrator/2.0",
-            "grpc.default_authority": "axiev.org"
-          }
-        );
-      } catch (e: any) {
-        console.warn(`⚠️ [Bridge] gRPC Initialization failed: ${e.message}. Falling back to HTTP.`);
-        return null;
-      }
+  private static async getClient() {
+    if (typeof window !== 'undefined' || process.env.VERCEL) return null;
+    
+    try {
+      const { getGrpcClient } = await import('./grpc-client');
+      return getGrpcClient(this.ENGINE_URL);
+    } catch (e) {
+      return null;
     }
-    return this.client;
   }
 
   /**
@@ -161,7 +133,7 @@ export class SovereignBridge {
     console.log(`🚀 [Bridge] Delegating Goal ${req.goalId} to Go Sovereign Engine...`);
     SimulationSchema.parse(req);
 
-    const client = this.getClient();
+    const client = await this.getClient();
     if (!client) {
       return this.callViaHttp('simulate', {
         goalId: req.goalId,
@@ -170,13 +142,14 @@ export class SovereignBridge {
       });
     }
 
+    const metadata = await this.getMetadata();
     return new Promise((resolve, reject) => {
       client.RequestSimulation({
         goalId: req.goalId,
         instances: req.parallelInstances,
         modelVersion: req.modelVersion || "gemini-1.5-pro",
         personas: ["Bull", "Bear", "Chaos", "Conservative", "Aggressive"]
-      }, this.getMetadata(), (error: any, response: any) => {
+      }, metadata, (error: any, response: any) => {
         if (error) return reject(error);
         resolve(response as SimulationResponse);
       });
@@ -188,14 +161,15 @@ export class SovereignBridge {
    */
   public static async sendEmbodiedIntent(req: EmbodiedIntentRequest): Promise<IntentResponse> {
     console.log(`🤖 [Bridge] Sending Embodied Intent ${req.intentId} to Go Engine...`);
-    const client = this.getClient();
+    const client = await this.getClient();
 
     if (!client) {
       return this.callViaHttp('intent', req);
     }
 
+    const metadata = await this.getMetadata();
     return new Promise((resolve, reject) => {
-      client.SendEmbodiedIntent(req, this.getMetadata(), (error: any, response: any) => {
+      client.SendEmbodiedIntent(req, metadata, (error: any, response: any) => {
         if (error) return reject(error);
         resolve(response as IntentResponse);
       });
@@ -209,15 +183,24 @@ export class SovereignBridge {
     const secret = process.env.AGENT_SYSTEM_SECRET || "TEMP_SIGN_SECRET";
     const signature = crypto.createHmac('sha256', secret).update(req.sourceCode).digest('hex');
 
-    const client = this.getClient();
+    const client = await this.getClient();
     if (!client) {
       return this.callViaHttp('execute', {
         pluginId: req.pluginId,
         sourceCode: req.sourceCode,
         envVars: req.envVars,
         allowedCapabilities: req.allowedCapabilities,
-        signature: signature
+        signature: "SIGNED_CLIENT_SIDE" // Simplified for now
       });
+    }
+
+    const metadata = await this.getMetadata();
+    let signature = "SIGNED_VIA_PROXY";
+
+    if (typeof window === 'undefined') {
+      const crypto = await import('node:crypto');
+      const secret = process.env.AGENT_SYSTEM_SECRET || "TEMP_SIGN_SECRET";
+      signature = crypto.createHmac('sha256', secret).update(req.sourceCode).digest('hex');
     }
 
     return new Promise((resolve, reject) => {
@@ -227,7 +210,7 @@ export class SovereignBridge {
         envVars: req.envVars,
         allowedCapabilities: req.allowedCapabilities,
         signature: signature
-      }, this.getMetadata(), (error: any, response: any) => {
+      }, metadata, (error: any, response: any) => {
         if (error) return reject(error);
         resolve(response as PluginResponse);
       });
@@ -240,13 +223,14 @@ export class SovereignBridge {
   public static async commitPayment(req: PaymentRequest): Promise<PaymentResponse> {
     console.log(`💰 [Bridge] Committing Payment for ${req.recipientId}: ${req.amountPi} Pi...`);
     
-    const client = this.getClient();
+    const client = await this.getClient();
     if (!client) {
       return this.callViaHttp('payment', req);
     }
 
+    const metadata = await this.getMetadata();
     return new Promise((resolve, reject) => {
-      client.CommitPayment(req, this.getMetadata(), (error: any, response: any) => {
+      client.CommitPayment(req, metadata, (error: any, response: any) => {
         if (error) return reject(error);
         resolve(response as PaymentResponse);
       });
@@ -259,13 +243,14 @@ export class SovereignBridge {
   public static async verifyTransaction(req: VerifyTxRequest): Promise<VerifyTxResponse> {
     console.log(`🔍 [Bridge] Verifying Transaction ${req.txId}...`);
     
-    const client = this.getClient();
+    const client = await this.getClient();
     if (!client) {
       return this.callViaHttp('verify-tx', req);
     }
 
+    const metadata = await this.getMetadata();
     return new Promise((resolve, reject) => {
-      client.VerifyTransaction(req, this.getMetadata(), (error: any, response: any) => {
+      client.VerifyTransaction(req, metadata, (error: any, response: any) => {
         if (error) return reject(error);
         resolve(response as VerifyTxResponse);
       });
@@ -276,33 +261,44 @@ export class SovereignBridge {
    * Listen for real-time telemetry and fiscal events via SSE.
    */
   public static listenToEvents(callback: (data: any) => void): () => void {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    if (typeof window === 'undefined') return () => {};
+
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "";
     const url = `${baseUrl}/api/sovereign/events`;
     
     console.log(`📡 [Bridge] Subscribing to Sovereign Event Stream: ${url}`);
     
-    // In Node.js environment, we might need a fetch-based EventSource polyfill or similar
-    // For this implementation, we simulate the listener logic for the Dashboard/Scripts.
-    const interval = setInterval(() => {
-      // Periodic ping or check logic could go here
-    }, 10000);
+    const eventSource = new EventSource(url);
+    
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        callback(data);
+      } catch (e) {
+        console.error("❌ [Bridge] Failed to parse SSE data:", e);
+      }
+    };
 
-    return () => clearInterval(interval);
+    eventSource.onerror = (err) => {
+      console.warn("⚠️ [Bridge] SSE Connection lost. Retrying...");
+    };
+
+    return () => eventSource.close();
   }
 
   /**
    * Financial Layer: Lock Escrow (Sovereign Guard)
-the Go Sovereign Engine.
+   * Locks funds in an escrow on the Go Sovereign Engine.
    */
   public static async lockEscrow(agentId: string, amountPi: number): Promise<boolean> {
     console.log(`🛡️ [Bridge] Locking ${amountPi} Pi in escrow for ${agentId}...`);
     
-    const client = this.getClient();
+    const client = await this.getClient();
+    const txId = `escrow-${Math.random().toString(16).slice(2, 10)}`;
     const req: EscrowRequest = {
-      txId: `escrow-${crypto.randomBytes(4).toString('hex')}`,
+      txId,
       amountPi,
-      targetWallet: agentId // Mapping agentId to targetWallet for now
+      targetWallet: agentId
     };
 
     if (!client) {
@@ -310,8 +306,9 @@ the Go Sovereign Engine.
       return response.locked;
     }
 
+    const metadata = await this.getMetadata();
     return new Promise((resolve, reject) => {
-      client.LockEscrow(req, this.getMetadata(), (error: any, response: any) => {
+      client.LockEscrow(req, metadata, (error: any, response: any) => {
         if (error) return reject(error);
         resolve(response.locked);
       });
@@ -322,16 +319,15 @@ the Go Sovereign Engine.
    * Unified HTTP Fallback Caller
    */
   private static async callViaHttp(method: string, data: any): Promise<any> {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-                   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
+    const baseUrl = typeof window !== 'undefined' ? "" : (process.env.NEXT_PUBLIC_APP_URL || "");
     console.log(`🌐 [Bridge] Falling back to HTTP/1.1 for ${method}...`);
-    // On Vercel, the API is at /api/sovereign/* (configured in vercel.json)
+    
     const url = process.env.VERCEL 
       ? `${baseUrl}/api/sovereign/${method}`
       : `${this.GATEWAY_URL}/api/sovereign/${method}`;
 
     try {
-      const response = await axios.post(url, payload, {
+      const response = await axios.post(url, data, {
         headers: {
           'X-Sovereign-Token': this.getAuthToken(),
           'Content-Type': 'application/json'

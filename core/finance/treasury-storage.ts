@@ -61,7 +61,7 @@ export class VercelKVAdapter implements ITreasuryStorage {
     try {
       // @ts-ignore
       const { kv } = await import('@vercel/kv');
-      const state = await kv.get<TreasuryState>('sovereign_treasury');
+      const state = await (kv as any).get('sovereign_treasury');
       return state || {
         reserves: { "Pi": 175.0, "SOL": 0.0, "ETH": 0.0 },
         escrows: {},

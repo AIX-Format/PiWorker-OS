@@ -109,6 +109,16 @@ export class ProfitVortex {
     };
   }
 
+  public static executeSanction(agentId: string) {
+    console.log(`\x1b[31m[PROFIT_VORTEX] 🚨 EXECUTION INITIATED: REVOKING BUDGET & DROPPING TRUST SCORE FOR ${agentId}\x1b[0m`);
+    return {
+      agentId,
+      newTrustScore: 0,
+      budgetStatus: "REVOKED",
+      treasuryStatus: "ASSETS_FROZEN"
+    };
+  }
+
   public getTreasuryBalance(): number {
     return this.sovereignTreasury;
   }

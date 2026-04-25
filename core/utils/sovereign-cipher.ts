@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+// SovereignCipher (AES-256-GCM)
 
 /**
  * AMRIKYY LAB :: SOVEREIGN CIPHER (AES-256-GCM)
@@ -15,6 +15,8 @@ export class SovereignCipher {
    * Protocol: [Nonce(12b)][Ciphertext][Tag(16b)] - Matches Go gcm.Seal
    */
   public static encrypt(plaintext: string, secret: string): string {
+    if (typeof window !== 'undefined') throw new Error("SovereignCipher: Encrypt NOT supported in browser.");
+    const crypto = require('node:crypto');
     const key = Buffer.alloc(32);
     key.write(secret);
 
@@ -36,6 +38,8 @@ export class SovereignCipher {
    * Protocol: [Nonce(12b)][Ciphertext][Tag(16b)]
    */
   public static decrypt(encodedPayload: string, secret: string): string {
+    if (typeof window !== 'undefined') throw new Error("SovereignCipher: Decrypt NOT supported in browser.");
+    const crypto = require('node:crypto');
     const key = Buffer.alloc(32);
     key.write(secret);
 

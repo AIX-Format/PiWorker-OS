@@ -1,4 +1,4 @@
-import path from 'node:path';
+// PathResolver (Isomorphic)
 
 /**
  * AMRIKYY LAB :: SOVEREIGN PATH RESOLVER
@@ -16,6 +16,8 @@ export class PathResolver {
    * Ensures consistency between local and cloud environments.
    */
   public static resolve(relativePath: string): string {
+    if (typeof window !== 'undefined') return relativePath;
+    const path = require('path');
     return path.join(this.root, relativePath);
   }
 

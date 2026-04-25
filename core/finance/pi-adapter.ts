@@ -1,6 +1,5 @@
 import { TelemetryLogger } from "../utils/telemetry-logger";
 import { SovereignBridge } from "../engine/sovereign-bridge";
-import crypto from "node:crypto";
 
 /**
  * PiWorker-OS PiAdapter (The Financial Brain)
@@ -28,9 +27,14 @@ export class PiAdapter {
     
     try {
       // 🏛️ Execute Real Payment via Go Engine
-      const response = await SovereignBridge.commitPayment(walletAddress, amount, "high");
+      const response = await SovereignBridge.commitPayment({
+        recipientId: walletAddress,
+        amountPi: amount,
+        agentAuthToken: process.env.SOVEREIGN_AUTH_TOKEN || "SOVEREIGN_DEV_TOKEN",
+        priority: "high"
+      });
       
-      const transactionId = response.tx_id || `pi-tx-${crypto.randomBytes(4).toString("hex")}`;
+      const transactionId = response.txId || `pi-tx-${Math.random().toString(16).slice(2, 10)}`;
       
       TelemetryLogger.log("INFO", "PI_SETTLEMENT", {
         agentId,
@@ -59,7 +63,7 @@ export class PiAdapter {
   async createServicePayment(amount: number, memo: string) {
     console.log(`🔗 [Pi SDK] Creating micro-service payment request for ${amount} Pi: ${memo}`);
     return {
-      paymentId: `pay_${crypto.randomBytes(6).toString("hex")}`,
+      paymentId: `pay_${Math.random().toString(16).slice(2, 14)}`,
       status: "pending",
       callbackUrl: "/api/pi/callback"
     };
@@ -73,8 +77,8 @@ export class PiAdapter {
     const status = await SovereignBridge.getSystemStatus();
     // In a full implementation, we'd query the specific wallet on-chain or via sidecar ledger.
     return { 
-      balance: status.pi_balance || 0,
-      isVerified: status.mode !== "OFFLINE"
+      balance: status?.pi_balance || 0,
+      isVerified: status?.mode !== "OFFLINE"
     };
   }
 }

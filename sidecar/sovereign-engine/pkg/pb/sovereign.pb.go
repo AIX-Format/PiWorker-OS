@@ -150,5 +150,146 @@ func (UnimplementedSovereignServiceServer) ExecutePlugin(context.Context, *Plugi
 func (UnimplementedSovereignServiceServer) mustEmbedUnimplementedSovereignServiceServer() {}
 
 func RegisterSovereignServiceServer(s *grpc.Server, srv SovereignServiceServer) {
-	// Real implementation would register handlers here
+	s.RegisterService(&_SovereignService_serviceDesc, srv)
+}
+
+var _SovereignService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "sovereign.SovereignService",
+	HandlerType: (*SovereignServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "RequestSimulation",
+			Handler:    _SovereignService_RequestSimulation_Handler,
+		},
+		{
+			MethodName: "LockEscrow",
+			Handler:    _SovereignService_LockEscrow_Handler,
+		},
+		{
+			MethodName: "VerifyTransaction",
+			Handler:    _SovereignService_VerifyTransaction_Handler,
+		},
+		{
+			MethodName: "CommitPayment",
+			Handler:    _SovereignService_CommitPayment_Handler,
+		},
+		{
+			MethodName: "SendEmbodiedIntent",
+			Handler:    _SovereignService_SendEmbodiedIntent_Handler,
+		},
+		{
+			MethodName: "ExecutePlugin",
+			Handler:    _SovereignService_ExecutePlugin_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "sovereign.proto",
+}
+
+func _SovereignService_RequestSimulation_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SimulationRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SovereignServiceServer).RequestSimulation(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sovereign.SovereignService/RequestSimulation",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SovereignServiceServer).RequestSimulation(ctx, req.(*SimulationRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SovereignService_LockEscrow_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EscrowRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SovereignServiceServer).LockEscrow(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sovereign.SovereignService/LockEscrow",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SovereignServiceServer).LockEscrow(ctx, req.(*EscrowRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SovereignService_VerifyTransaction_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(VerifyTxRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SovereignServiceServer).VerifyTransaction(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sovereign.SovereignService/VerifyTransaction",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SovereignServiceServer).VerifyTransaction(ctx, req.(*VerifyTxRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SovereignService_CommitPayment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PaymentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SovereignServiceServer).CommitPayment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sovereign.SovereignService/CommitPayment",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SovereignServiceServer).CommitPayment(ctx, req.(*PaymentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SovereignService_SendEmbodiedIntent_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmbodiedIntent)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SovereignServiceServer).SendEmbodiedIntent(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sovereign.SovereignService/SendEmbodiedIntent",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SovereignServiceServer).SendEmbodiedIntent(ctx, req.(*EmbodiedIntent))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _SovereignService_ExecutePlugin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PluginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(SovereignServiceServer).ExecutePlugin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/sovereign.SovereignService/ExecutePlugin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(SovereignServiceServer).ExecutePlugin(ctx, req.(*PluginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }

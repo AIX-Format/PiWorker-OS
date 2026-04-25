@@ -16,6 +16,10 @@ const nextConfig = {
         fs: false,
         net: false,
         tls: false,
+        http2: false,
+        dns: false,
+        os: false,
+        stream: false,
       };
     }
     return config;

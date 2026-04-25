@@ -38,8 +38,12 @@ async function runStressTest() {
   // 3. Stress Test: Parallel Payments (Durable Journal + Fiscal Queue)
   console.log("\n💰 [Test] Triggering 3 Parallel Payments...");
   const paymentTasks = Array.from({ length: 3 }).map((_, i) => {
-    return SovereignBridge.commitPayment(`recipient_${i}`, 0.5 + i, "instant")
-      .catch(err => ({ error: err.message, id: i }));
+    return SovereignBridge.commitPayment({
+      recipientId: `recipient_${i}`,
+      amountPi: 0.5 + i,
+      agentAuthToken: process.env.SOVEREIGN_AUTH_TOKEN || "SOVEREIGN_DEV_TOKEN",
+      priority: "instant"
+    }).catch(err => ({ error: err.message, id: i }));
   });
 
   // Wait for all tasks to complete

@@ -26,7 +26,7 @@ export class ContentArbitrageSkill {
     });
 
     // 3. Commit to Treasury
-    const financeResult = AmrikyyTreasury.processInflow(agentId, estimatedValue);
+    const financeResult = await AmrikyyTreasury.processInflow(agentId, estimatedValue);
 
     return {
       output: signedOutput,
