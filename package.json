@@ -18,7 +18,8 @@
     "typecheck": "tsc --noEmit",
     "prepare": "husky",
     "playwright:install:chromium": "npx playwright@1.41.2 install --with-deps chromium",
-    "playwright:test:sandbox": "npx playwright@1.41.2 test tests/sandbox-audit.spec.ts --reporter=line"
+    "playwright:test:sandbox": "npx playwright@1.41.2 test tests/sandbox-audit.spec.ts --reporter=line",
+    "profile:slo": "node scripts/profile-slo.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",

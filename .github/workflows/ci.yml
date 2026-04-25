@@ -30,6 +30,9 @@ jobs:
       - name: Enforce npm audit policy (fail on high/critical)
         run: npm audit --audit-level=high --omit=dev
 
+      - name: Targeted Performance SLO Profiling
+        run: npm run profile:slo
+
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
@@ -124,6 +127,7 @@ jobs:
           - ✅ Node build
           - ✅ Go build (CLI + sovereign engine)
           - ✅ Security scans (Secretlint + Trivy)
+          - ✅ Targeted Performance SLO Profiling
           - ✅ Artifact sanity checks
 
           ## Secret/config validation result
