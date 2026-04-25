@@ -81,9 +81,10 @@ type PaymentRequest struct {
 }
 
 type PaymentResponse struct {
-	Success     bool
-	TxId        string
-	ExplorerUrl string
+	Success      bool
+	TxId         string
+	ExplorerUrl  string
+	ErrorMessage string
 }
 
 // --- Sandbox Layer ---
