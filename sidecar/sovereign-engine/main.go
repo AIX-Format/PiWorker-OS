@@ -2,11 +2,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"net"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
 	pb "github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/pb"
 	"github.com/Moeabdelaziz007/PiWorker-OS/sidecar/sovereign-engine/pkg/server"
@@ -20,6 +24,53 @@ import (
 const devSovereignTokenFallback = "SOVEREIGN_DEV_TOKEN"
 
 var sovereignAuthToken string
+
+func resolveContractPath() (string, error) {
+	candidates := []string{
+		"sidecar/sovereign-engine/proto/sovereign.proto",
+		"proto/sovereign.proto",
+	}
+
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			abs, absErr := filepath.Abs(candidate)
+			if absErr != nil {
+				return candidate, nil
+			}
+			return abs, nil
+		}
+	}
+
+	return "", errors.New("gRPC contract file sovereign.proto not found")
+}
+
+func startHealthServer(grpcAddr string, contractPath string) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		report := map[string]any{
+			"status":    "UP",
+			"service":   "sovereign-engine",
+			"timestamp": time.Now().UTC().Format(time.RFC3339Nano),
+			"grpc": map[string]string{
+				"address": grpcAddr,
+				"status":  "READY",
+			},
+			"contracts": map[string]string{
+				"grpc": "AVAILABLE",
+				"path": contractPath,
+			},
+		}
+		_ = json.NewEncoder(w).Encode(report)
+	})
+
+	go func() {
+		log.Printf("🩺 Health endpoint listening at http://127.0.0.1:8080/health")
+		if err := http.ListenAndServe(":8080", mux); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("failed to start health server: %v", err)
+		}
+	}()
+}
 
 func isDevEnvironment() bool {
 	env := strings.ToLower(strings.TrimSpace(os.Getenv("APP_ENV")))
@@ -82,6 +133,11 @@ func main() {
 	}
 	sovereignAuthToken = token
 
+	contractPath, err := resolveContractPath()
+	if err != nil {
+		log.Fatalf("❌ [CONTRACT_UNAVAILABLE] %v", err)
+	}
+
 	srv, err := server.NewSovereignServer(ctx)
 	if err != nil {
 		log.Fatalf("failed to init server: %v", err)
@@ -99,6 +155,7 @@ func main() {
 	reflection.Register(s)
 
 	log.Printf("📡 gRPC Server listening at %v", lis.Addr())
+	startHealthServer(lis.Addr().String(), contractPath)
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

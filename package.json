@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:stack": "node scripts/dev-stack.mjs",
     "prebuild": "node scripts/preflight-check.mjs",
     "build": "next build",
     "build:sovereign": "./scripts/sovereign-build.sh",
