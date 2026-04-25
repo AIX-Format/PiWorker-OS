@@ -27,8 +27,14 @@ jobs:
           go-version: "1.24.x"
           cache: true
 
+      - name: Test (Go)
+        run: go test ./...
+
       - name: Install dependencies
         run: npm install --legacy-peer-deps
+
+      - name: Test (Node)
+        run: npm run test:ci
 
       - name: Typecheck (Node)
         run: npm run typecheck
