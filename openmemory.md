@@ -17,11 +17,17 @@
 - **Git Metadata**:
   - **Repo**: Moeabdelaziz007/PiWorker-OS
   - **Branch**: main
-  - **Milestones**: Restored Engine, Hybrid Bridge, Pi-402 Protocol, KYA AIX Passport System.
+  - **Milestones**: Restored Engine, Hybrid Bridge, Pi-402 Protocol, KYA AIX Passport System, Intent-Based Escrow.
 - **Protocol Details**:
   - **KYA**: Ed25519 signatures on agent passports.
   - **ZKP**: Commitment `hash(OwnerID + AgentID + Salt)` to preserve privacy.
   - **AIX Bridge**: gRPC handlers in `server.go` for seamless integration with Next.js frontend.
+  - **Intent Escrow**: Zero-trust bounty system for autonomous task resolution.
+
+## Phase 36: Agentic Freelance Economy (In Progress)
+- **EscrowManager**: Implemented Intent-Centric execution logic in Go.
+- **Bounty System**: Supporting Human-to-Agent and Agent-to-Agent Pi transactions.
+- **Verification**: Proof-of-Satisfaction mechanism for automatic reward release.
 
 ## Phase 34: Sovereign Git Refactoring & Visual Excellence
 - Refactored massive untracked state into logical, expert-level commits.

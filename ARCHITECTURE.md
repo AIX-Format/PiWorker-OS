@@ -37,6 +37,8 @@ PiWorker-OS is an independent digital state governed by **Amrikyy Lab**.
     - **AIX Format**: A cryptographically signed "Passport" for AI Agents.
     - **ZKP-lite**: Privacy-preserving Zero-Knowledge Proof commitment linking agent sub-keys to a verified Pi Network KYC.
     - **Compliance**: Enables agents to present "Proof of Human Backup" to external systems without revealing the owner's identity.
+  - `Intent Escrow`: Intent-centric bounty system for agent-to-agent task settlement.
+    - **Proof-of-Satisfaction**: Funds are released from escrow only when a solver presents proof (visual/cryptographic) that the intent was fulfilled.
 
 ### Layer C: The Physical Layer (Robot Pi / π0.7)
 
