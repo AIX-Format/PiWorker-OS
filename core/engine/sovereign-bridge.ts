@@ -99,12 +99,33 @@ export interface PluginResponse {
 export class SovereignBridge {
   private static ENGINE_URL: string = process.env.SOVEREIGN_ENGINE_URL || "http://localhost:50051";
   private static GATEWAY_URL: string = process.env.SOVEREIGN_ENGINE_URL?.replace(':50051', ':8080') || "http://localhost:8080";
+
+  private static isDevEnvironment(): boolean {
+    const env = (process.env.APP_ENV || process.env.NODE_ENV || "").toLowerCase().trim();
+    return env === "" || env === "development" || env === "dev" || env === "test" || env === "local";
+  }
+
+  private static requireEnvSecret(name: string, devFallback?: string): string {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+
+    if (devFallback && this.isDevEnvironment()) {
+      return devFallback;
+    }
+
+    throw new Error(`[SEC_ERROR] Missing required secret: ${name}`);
+  }
+
+  static {
+    if (typeof window === 'undefined') {
+      this.requireEnvSecret("SOVEREIGN_AUTH_TOKEN", "SOVEREIGN_DEV_TOKEN");
+      this.requireEnvSecret("AGENT_SYSTEM_SECRET", "TEMP_SIGN_SECRET");
+    }
+  }
   
   private static getAuthToken(): string {
     if (typeof window !== 'undefined') return "BROWSER_AUTH_PENDING";
-    const token = process.env.SOVEREIGN_AUTH_TOKEN;
-    if (!token) return "SOVEREIGN_DEV_TOKEN";
-    return token;
+    return this.requireEnvSecret("SOVEREIGN_AUTH_TOKEN", "SOVEREIGN_DEV_TOKEN");
   }
   
   private static client: any = null;
@@ -180,9 +201,6 @@ export class SovereignBridge {
     console.log(`🛡️ [Bridge] Delegating Sandbox Execution for ${req.pluginId} to Go...`);
     PluginSchema.parse(req);
 
-    const secret = process.env.AGENT_SYSTEM_SECRET || "TEMP_SIGN_SECRET";
-    const signature = crypto.createHmac('sha256', secret).update(req.sourceCode).digest('hex');
-
     const client = await this.getClient();
     if (!client) {
       return this.callViaHttp('execute', {
@@ -199,7 +217,7 @@ export class SovereignBridge {
 
     if (typeof window === 'undefined') {
       const crypto = await import('node:crypto');
-      const secret = process.env.AGENT_SYSTEM_SECRET || "TEMP_SIGN_SECRET";
+      const secret = this.requireEnvSecret("AGENT_SYSTEM_SECRET", "TEMP_SIGN_SECRET");
       signature = crypto.createHmac('sha256', secret).update(req.sourceCode).digest('hex');
     }
 
