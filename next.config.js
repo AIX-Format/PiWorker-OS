@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Config for Next.js 15
-  output: "export",
+
   experimental: {
     // any experimental features can be added here
   },
@@ -9,12 +9,17 @@ const nextConfig = {
     unoptimized: true, // For local-first / static export if needed
   },
   webpack: (config, { isServer }) => {
-    // Fixes npm packages that depend on `crypto` and other Node modules
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
+        "node:crypto": false,
+        "node:fs": false,
+        "node:path": false,
+        "node:child_process": false,
+        "node:util": false,
         crypto: false,
         fs: false,
+        path: false,
         net: false,
         tls: false,
         http2: false,

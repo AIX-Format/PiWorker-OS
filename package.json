@@ -4,7 +4,14 @@
   "type": "module",
   "private": true,
   "engines": {
-    "node": "22.x"
+    "node": ">=22.x"
+  },
+  "browser": {
+    "node:fs": false,
+    "node:path": false,
+    "node:crypto": false,
+    "node:child_process": false,
+    "node:util": false
   },
   "scripts": {
     "dev": "next dev",

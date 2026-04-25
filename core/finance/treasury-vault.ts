@@ -114,7 +114,7 @@ export class AmrikyyTreasury {
    * Returns current state of all national assets.
    * [Sovereign Sync] Merges Muscle balance with Brain reserves.
    */
-  static async getStats() {
+  static async getStats(): Promise<{ reserves: Record<string, number>; taxRate: number; status: string; lastAudit: string }> {
     const state = await this.storage.load();
     let muscleBalance = 0;
 

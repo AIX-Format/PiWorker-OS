@@ -17,7 +17,7 @@ export async function GET() {
     const insights = await PersistenceEngine.loadInsights();
     const lastLogs = insights.slice(-5).reverse();
 
-    const treasuryStats = AmrikyyTreasury.getStats();
+    const treasuryStats = await AmrikyyTreasury.getStats();
 
     const state = {
       timestamp: new Date().toISOString(),

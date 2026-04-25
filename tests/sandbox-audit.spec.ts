@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('The Sandbox Audit - Pi Payment Flow', () => {
-  test('should successfully initiate a sovereign agent hire', async ({ page }) => {
+  test('should successfully initiate a sovereign agent hire', async ({ page }: { page: any }) => {
     // 1. Navigate to Marketplace
     await page.goto('/marketplace');
     
@@ -19,7 +19,7 @@ test.describe('The Sandbox Audit - Pi Payment Flow', () => {
     await expect(identityText).toBeVisible();
     
     // 5. Check if the bridge connection is logged (optional, check console)
-    page.on('console', msg => {
+    page.on('console', (msg: any) => {
       if (msg.text().includes('[Sovereign Engine]')) {
         console.log('✅ Bridge Communication Detected:', msg.text());
       }

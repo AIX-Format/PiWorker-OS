@@ -24,7 +24,7 @@ class FleetManager {
   /**
    * Updates an agent's status and syncs.
    */
-  async updateStatus(agentId: string, status: any) {
+  async updateStatus(agentId: string, status: "active" | "idle" | "busy" | "offline" | "hibernating" | "terminated") {
     const reg = await this.getRegistry();
     const agent = reg.getAgent(agentId);
     if (agent) {
@@ -37,13 +37,14 @@ class FleetManager {
    * Evaluates if the fleet needs to expand based on treasury health.
    */
   async evaluateScaling() {
-    const stats = AmrikyyTreasury.getStats();
+    const stats = await AmrikyyTreasury.getStats();
     const reg = await this.getRegistry();
     const fleetSize = reg.getAllAgents().length;
 
-    console.log(`[FLEET_MANAGER] Scaling Evaluation: Reserve at ${stats.reserves['(default)'] || 0} Pi.`);
+    const piReserve = stats.reserves["Pi"] || 0;
+    console.log(`[FLEET_MANAGER] Scaling Evaluation: Reserve at ${piReserve} Pi.`);
 
-    if ((stats.reserves['(default)'] || 0) >= 200 && fleetSize < 10) {
+    if (piReserve >= 200 && fleetSize < 10) {
       console.log("\x1b[1m\x1b[32m[SCALING] Wealth threshold met. Spawning new Sovereign Agent...\x1b[0m");
       const specializations: AgentSpecialization[] = ["BountyHunter", "MarketingSpecialist", "CodeAuditor"];
       const randomSpec = specializations[Math.floor(Math.random() * specializations.length)];

@@ -31,7 +31,7 @@ export class PiAdapter {
         recipientId: walletAddress,
         amountPi: amount,
         agentAuthToken: process.env.SOVEREIGN_AUTH_TOKEN || "SOVEREIGN_DEV_TOKEN",
-        priority: "high"
+        priority: "standard"
       });
       
       const transactionId = response.txId || `pi-tx-${Math.random().toString(16).slice(2, 10)}`;
