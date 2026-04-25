@@ -22,14 +22,8 @@ export async function GET(request: Request) {
 
   try {
     const start = Date.now();
-    await SovereignBridge.requestSimulation(
-      {
-        goalId: 'HEALTH_CHECK',
-        parallelInstances: 1,
-        modelVersion: 'gemini-1.5-pro',
-      },
-      context
-    );
+    await SovereignBridge.assertHealthContract(context);
+    await SovereignBridge.getSystemStatus(context);
 
     healthReport.layers.sovereign_engine.status = 'ONLINE';
     healthReport.layers.sovereign_engine.latency = `${Date.now() - start}ms`;

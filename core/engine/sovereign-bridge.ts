@@ -18,6 +18,13 @@ export interface BridgeCallContext {
   authContext?: string;
 }
 
+interface EngineHealthResponse {
+  status: string;
+  contracts: {
+    grpc: string;
+  };
+}
+
 export type SimulationRequest = import("../contracts/critical-contracts").SimulationRequestContract;
 export type SimulationResponse = import("../contracts/critical-contracts").SimulationResponseContract;
 
@@ -108,9 +115,29 @@ export class SovereignBridge {
 
     try {
       const { getGrpcClient } = await import('./grpc-client');
-      return getGrpcClient(this.ENGINE_URL);
-    } catch {
+      return await getGrpcClient(this.ENGINE_URL);
+    } catch (error: any) {
+      if (String(error?.message || '').includes('CONTRACT_UNAVAILABLE')) {
+        throw error;
+      }
       return null;
+    }
+  }
+
+  private static async getEngineHealth(context: Required<BridgeCallContext>): Promise<EngineHealthResponse> {
+    try {
+      const response = await axios.get(`${this.GATEWAY_URL}/health`, {
+        headers: {
+          'X-Sovereign-Token': this.getAuthToken(),
+          'X-Correlation-Id': context.correlationId,
+          'X-Request-Id': context.requestId,
+        },
+        timeout: 2500,
+      });
+
+      return response.data as EngineHealthResponse;
+    } catch (error: any) {
+      throw new Error(`[ENGINE_HEALTH_UNAVAILABLE] ${error.message}`);
     }
   }
 
@@ -343,7 +370,16 @@ export class SovereignBridge {
       });
       return response.data;
     } catch (error: any) {
-      return { status: 'OFFLINE', error: error.message };
+      throw new Error(`[SYSTEM_STATUS_UNAVAILABLE] ${error.message}`);
+    }
+  }
+
+  public static async assertHealthContract(context?: BridgeCallContext): Promise<void> {
+    const resolved = await this.makeContext(context);
+    const engineHealth = await this.getEngineHealth(resolved);
+
+    if (engineHealth.contracts?.grpc !== 'AVAILABLE') {
+      throw new Error('[CONTRACT_UNAVAILABLE] Sidecar contract reports unavailable state');
     }
   }
 }
