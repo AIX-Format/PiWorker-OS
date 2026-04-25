@@ -63,6 +63,10 @@ data/
 tmp/
 .go-cache/
 sidecar/sovereign-engine/.go-cache/
+.gocache/
+.gomod/
+.gomodcache/
+.kilo/
 
 # Local Environment & Secrets
 .env
