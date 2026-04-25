@@ -10,10 +10,18 @@
   - **Micro-transaction Engine**: Automated settlement via Soroban smart contracts (`CC402_PI_AGENT_HUB`).
   - **Sovereign Bank**: PiWorker-OS now acts as the central settlement layer for agents on the Pi Network.
 - **Restoration**: Successfully recovered core engine logic from hollow state (26 files restored).
+- **Identity Layer**: **KYA (Know Your Agent)** & **AIX Format**.
+  - **AIX Passport**: Cryptographically signed credentials linking agents to Pi KYC.
+  - **ZKP-lite**: Privacy-preserving proof of human ownership for sovereign agents.
+  - **Sovereign Trust**: Enabling agents to bypass bot-blocking firewalls via verified credentials.
 - **Git Metadata**:
   - **Repo**: Moeabdelaziz007/PiWorker-OS
   - **Branch**: main
-  - **Milestones**: Restored Engine, Hybrid Bridge, Pi-402 Protocol.
+  - **Milestones**: Restored Engine, Hybrid Bridge, Pi-402 Protocol, KYA AIX Passport System.
+- **Protocol Details**:
+  - **KYA**: Ed25519 signatures on agent passports.
+  - **ZKP**: Commitment `hash(OwnerID + AgentID + Salt)` to preserve privacy.
+  - **AIX Bridge**: gRPC handlers in `server.go` for seamless integration with Next.js frontend.
 
 ## Phase 34: Sovereign Git Refactoring & Visual Excellence
 - Refactored massive untracked state into logical, expert-level commits.

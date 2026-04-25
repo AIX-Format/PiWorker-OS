@@ -33,6 +33,10 @@ PiWorker-OS is an independent digital state governed by **Amrikyy Lab**.
   - `SovereignJournal`: Durable, append-only log for crash recovery and intent auditing.
   - `HybridIntelligence`: Multi-model routing (Gemini 3.1 Pro + Gemma 2) for cost-efficient reasoning.
   - `Pi-402 Protocol`: Agent-to-Agent micro-payment engine with Soroban settlement.
+  - `KYA Identity`: "Know Your Agent" protocol with AIX Passport for regulatory compliance.
+    - **AIX Format**: A cryptographically signed "Passport" for AI Agents.
+    - **ZKP-lite**: Privacy-preserving Zero-Knowledge Proof commitment linking agent sub-keys to a verified Pi Network KYC.
+    - **Compliance**: Enables agents to present "Proof of Human Backup" to external systems without revealing the owner's identity.
 
 ### Layer C: The Physical Layer (Robot Pi / π0.7)
 
