@@ -71,6 +71,7 @@ export interface PluginResponse {
   outputJson: string;
   errorMessage: string;
   executionTimeMs: number;
+  logs: string[];
 }
 
 /**

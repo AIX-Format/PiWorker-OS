@@ -200,7 +200,7 @@ func (s *sovereignServer) ExecutePlugin(ctx context.Context, req *pb.PluginReque
 	}
 	
 	start := time.Now()
-	output, err := s.sandboxEngine.Execute(ctx, req.SourceCode, req.EnvVars, req.AllowedCapabilities)
+	res, err := s.sandboxEngine.Execute(ctx, req.SourceCode, req.EnvVars, req.AllowedCapabilities)
 	duration := time.Since(start).Milliseconds()
 
 	if err != nil {
@@ -209,14 +209,16 @@ func (s *sovereignServer) ExecutePlugin(ctx context.Context, req *pb.PluginReque
 			Success:          false,
 			ErrorMessage:     fmt.Sprintf("sandbox failure: %v", err),
 			ExecutionTimeMs:  duration,
+			Logs:             res.Logs,
 		}, nil
 	}
 
 	return &pb.PluginResponse{
 		PluginId:         req.PluginId,
 		Success:          true,
-		OutputJson:       output,
+		OutputJson:       res.Data,
 		ExecutionTimeMs:  duration,
+		Logs:             res.Logs,
 	}, nil
 }
 

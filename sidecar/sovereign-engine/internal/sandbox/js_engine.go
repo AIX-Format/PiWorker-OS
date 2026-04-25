@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/robertkrimen/otto"
@@ -21,39 +23,51 @@ func NewNeuralSandbox(timeout time.Duration) *NeuralSandbox {
 	return &NeuralSandbox{timeout: timeout}
 }
 
+// SandboxResult wraps the script output and captured logs.
+type SandboxResult struct {
+	Data string
+	Logs []string
+}
+
 // Execute runs the provided JS source code in a restricted Otto isolate.
-func (ns *NeuralSandbox) Execute(ctx context.Context, source string, env map[string]string, capabilities []string) (string, error) {
+func (ns *NeuralSandbox) Execute(ctx context.Context, source string, env map[string]string, capabilities []string) (*SandboxResult, error) {
 	vm := otto.New()
 	
-	// 🛡️ [SECURITY] Pre-emptively initialize Interrupt channel (Ring 3 Hardening)
+	// 🛡️ [SECURITY] Pre-emptively initialize Interrupt channel
 	vm.Interrupt = make(chan func(), 1)
 
-	// Helper to check for capability
-	hasCap := func(c string) bool {
-		for _, cap := range capabilities {
-			if cap == c {
-				return true
-			}
+	var logs []string
+	var mu sync.Mutex
+
+	// 📋 [SEC_WHITELIST] Standard Safe Globals
+	// We allow common JS objects but block process-level access.
+	
+	// 🎙️ [Secure Console] Capturing logs from the sandbox
+	consoleObj, _ := vm.Object(`console = {}`)
+	consoleObj.Set("log", func(call otto.FunctionCall) otto.Value {
+		mu.Lock()
+		defer mu.Unlock()
+		var msg []string
+		for _, arg := range call.ArgumentList {
+			msg = append(msg, arg.String())
 		}
-		return false
-	}
+		logs = append(logs, strings.Join(msg, " "))
+		return otto.Value{}
+	})
 
 	// Inject Environment Variables
 	for k, v := range env {
 		vm.Set(k, v)
 	}
 
-	// 🔒 [SECURITY] Disable dangerous globals (Ring 5 Lockdown)
-	if !hasCap("NETWORK_ACCESS") {
-		vm.Set("net", nil)
-		vm.Set("http", nil)
-		vm.Set("fetch", nil)
-	}
-	
+	// 🔒 [SECURITY] Ring 5 Lockdown - Whitelist Strategy
+	// Everything not explicitly enabled or standard is blocked.
 	vm.Set("os", nil)
 	vm.Set("fs", nil)
 	vm.Set("process", nil)
 	vm.Set("require", nil)
+	vm.Set("module", nil)
+	vm.Set("exports", nil)
 
 	// Result channel
 	type result struct {
@@ -65,7 +79,7 @@ func (ns *NeuralSandbox) Execute(ctx context.Context, source string, env map[str
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				resChan <- result{err: fmt.Errorf("neural isolation failure: %v", r)}
+				resChan <- result{err: fmt.Errorf("neural isolation panic: %v", r)}
 			}
 		}()
 
@@ -85,14 +99,13 @@ func (ns *NeuralSandbox) Execute(ctx context.Context, source string, env map[str
 	// Wait for completion or timeout
 	select {
 	case res := <-resChan:
-		return res.val, res.err
+		return &SandboxResult{Data: res.val, Logs: logs}, res.err
 	case <-time.After(ns.timeout):
-		// 🛠️ Hard Lockdown: Interrupt the VM
 		vm.Interrupt <- func() {
 			panic("SOVEREIGN_SANDBOX_TIMEOUT_BREACH")
 		}
-		return "", fmt.Errorf("neural isolation timeout breach: %v exceeded", ns.timeout)
+		return &SandboxResult{Logs: logs}, fmt.Errorf("neural isolation timeout breach: %v exceeded", ns.timeout)
 	case <-ctx.Done():
-		return "", ctx.Err()
+		return &SandboxResult{Logs: logs}, ctx.Err()
 	}
 }

@@ -35,8 +35,11 @@ export class SandboxExecutor {
         throw new Error(`[SANDBOX_ERROR] ${response.errorMessage}`);
       }
 
-      // Parse the JSON output from the Go engine
-      return JSON.parse(response.outputJson);
+      // Parse the JSON output and include logs from the Go engine
+      return {
+        data: JSON.parse(response.outputJson || "{}"),
+        logs: response.logs || []
+      };
     } catch (error) {
       const msg = error instanceof Error ? error.message : "UNKNOWN_EXECUTION_FAILURE";
       console.error(`❌ [Sandbox] Neural Isolation Failure in ${pluginId}:`, msg);
