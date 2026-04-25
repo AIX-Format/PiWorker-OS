@@ -180,9 +180,6 @@ export class SovereignBridge {
     console.log(`🛡️ [Bridge] Delegating Sandbox Execution for ${req.pluginId} to Go...`);
     PluginSchema.parse(req);
 
-    const secret = process.env.AGENT_SYSTEM_SECRET || "TEMP_SIGN_SECRET";
-    const signature = crypto.createHmac('sha256', secret).update(req.sourceCode).digest('hex');
-
     const client = await this.getClient();
     if (!client) {
       return this.callViaHttp('execute', {

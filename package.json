@@ -16,7 +16,8 @@
     "forge": "go run dev.go",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test:e2e:critical": "node --test tests/e2e/sovereign-critical-path.e2e.test.mjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
