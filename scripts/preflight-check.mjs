@@ -23,7 +23,7 @@ async function runValidation() {
     },
     { 
       name: "Go Engine Module", 
-      check: () => fs.existsSync(path.join(process.cwd(), 'sidecar/sovereign-engine/go.mod')),
+      check: () => fs.existsSync(path.join(process.cwd(), 'go.mod')),
       severity: "CRITICAL"
     },
     { 
