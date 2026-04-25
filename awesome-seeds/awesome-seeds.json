@@ -1,0 +1,35 @@
+{
+  "version": "1.0.0",
+  "name": "PiWorker-OS Awesome Seeds",
+  "description": "High-level agentic protocols, security rules, and evolution prompts for MAS-ZERO.",
+  "seeds": [
+    {
+      "id": "PROT_KYA_01",
+      "category": "Identity",
+      "title": "KYA Passport Protocol",
+      "content": "Agents must present a cryptographically signed AIX Passport for all cross-domain operations. Verification involves checking the ZKP commitment against the Pi Network KYC hash without revealing the owner's true identity.",
+      "tags": ["Security", "Identity", "KYA"]
+    },
+    {
+      "id": "PROT_INTENT_01",
+      "category": "Economics",
+      "title": "Intent-Based Escrow Release",
+      "content": "Funds in escrow are released only upon submission of a 'Proof-of-Satisfaction' (PoS). PoS must include a result hash and a signature from either the task creator or a majority of a decentralized validator pool.",
+      "tags": ["Finance", "Escrow", "Pi-402"]
+    },
+    {
+      "id": "RULE_SANDBOX_01",
+      "category": "Security",
+      "title": "Ring 3 Isolation",
+      "content": "All third-party plugins must run within the Ring 3 Sandbox. This layer prevents direct system calls and limits network access to white-listed endpoints via the Sovereign Maestro orchestrator.",
+      "tags": ["Sandbox", "Security", "Isolation"]
+    },
+    {
+      "id": "PROMPT_EVOLVE_01",
+      "category": "Evolution",
+      "title": "Self-Optimization Loop",
+      "content": "Analyze logs from the last 1000 transactions. Identify latency bottlenecks in the gRPC bridge. Propose a new batching strategy for micro-transactions under 1 Pi.",
+      "tags": ["AI", "Optimization", "MAS-ZERO"]
+    }
+  ]
+}
