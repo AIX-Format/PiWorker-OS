@@ -199,6 +199,16 @@ cp .env.example .env
 # Set GEMINI_API_KEY and OPENPI_INFERENCE_URL
 ```
 
+### Sovereign Engine Build Matrix (Release Artifacts)
+
+| Target | Build command | Output artifact |
+| --- | --- | --- |
+| `linux/arm64` | `GOOS=linux GOARCH=arm64 ./scripts/build-sovereign-engine.sh` | `bin/sovereign-engine-linux-arm64` |
+| `linux/amd64` | `GOOS=linux GOARCH=amd64 ./scripts/build-sovereign-engine.sh` | `bin/sovereign-engine-linux-amd64` |
+
+- Defaults are env-driven: if `GOOS` / `GOARCH` are unset, the build script defaults to `linux/arm64`.
+- Release naming convention is `sovereign-engine-<goos>-<goarch>` for quick platform identification.
+
 ---
 **"We are not building a repo. We are building the layer that connects the Mind to the Body."**
 *Amrikyy Lab :: 2026*

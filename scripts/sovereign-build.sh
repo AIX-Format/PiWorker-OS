@@ -35,10 +35,14 @@ npm run build
 
 # PHASE 6: POST-BUILD VERIFICATION
 echo "✅ [PHASE 6] Verifying Build Integrity..."
-if [ -d ".next" ] && [ -f "bin/sovereign-engine" ]; then
+BUILD_GOOS="${GOOS:-linux}"
+BUILD_GOARCH="${GOARCH:-arm64}"
+ENGINE_ARTIFACT="bin/sovereign-engine-${BUILD_GOOS}-${BUILD_GOARCH}"
+if [ -d ".next" ] && [ -f "${ENGINE_ARTIFACT}" ]; then
     echo "👑 [SUCCESS] Sovereign Build Cycle Complete. Zero defects detected."
+    echo "🏷️ [ARTIFACT] Verified ${ENGINE_ARTIFACT}"
     echo "📊 [REPORT] Summary saved to $LOG_FILE"
 else
-    echo "❌ [FATAL] Build integrity check failed! Missing critical artifacts."
+    echo "❌ [FATAL] Build integrity check failed! Missing critical artifacts (${ENGINE_ARTIFACT})."
     exit 1
 fi
