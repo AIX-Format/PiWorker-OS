@@ -24,7 +24,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-          cache: npm
 
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
@@ -43,7 +42,6 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.x"
-          cache: true
           cache-dependency-path: go.sum
 
       - name: Verify Go module integrity
@@ -167,13 +165,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
-          cache: 'npm'
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.25.x"
-          cache: true
           cache-dependency-path: go.sum
 
       - name: Install dependencies
