@@ -2,6 +2,7 @@ export type ErrorCategory = 'AUTH' | 'NETWORK' | 'BUILD' | 'VALIDATION' | 'DEPEN
 
 export interface CorrelationContext {
   requestId: string;
+  correlation_id?: string; // Compatibility with both styles if needed
   correlationId: string;
   authContext: string;
 }
