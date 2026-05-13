@@ -1,75 +1,69 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import http from 'node:http';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const ARTIFACT_ROOT = path.join(process.cwd(), 'tests/e2e/artifacts');
-const REQUIRED_ENV = ['SOVEREIGN_AUTH_TOKEN', 'AGENT_SYSTEM_SECRET', 'SOVEREIGN_ENGINE_URL'];
-const DETERMINISTIC = {
-  goalId: 'goal-e2e-0001',
-  pluginId: 'plugin-e2e-0001',
-  paymentRecipientId: 'agent-e2e-0001',
-  escrowAgentId: 'agent-e2e-escrow-01',
-  sourceCode: 'export default async () => ({ ok: true, version: 1 });'
+const REQUIRED_ENV = [
+  'SOVEREIGN_AUTH_TOKEN',
+  'AGENT_SYSTEM_SECRET',
+  'SOVEREIGN_ENGINE_URL',
+  'SOVEREIGN_GATEWAY_URL',
+  'E2E_EXPECTED_SYSTEM_STATUS',
+  'E2E_EXPECTED_SYSTEM_REVISION'
+];
+
+const E2E_CONFIG = {
+  goalId: process.env.E2E_GOAL_ID || 'goal-e2e-default',
+  pluginId: process.env.E2E_PLUGIN_ID || 'plugin-e2e-default',
+  paymentRecipientId: process.env.E2E_PAYMENT_RECIPIENT_ID || 'agent-e2e-default',
+  escrowAgentId: process.env.E2E_ESCROW_AGENT_ID || 'agent-e2e-escrow-default',
+  sourceCode: process.env.E2E_PLUGIN_SOURCE_CODE || 'export default async () => ({ ok: true });',
+  requestTimeoutMs: Number(process.env.E2E_HTTP_TIMEOUT_MS || 10_000),
+  retryMaxAttempts: Number(process.env.E2E_RETRY_MAX_ATTEMPTS || 4),
+  retryBaseDelayMs: Number(process.env.E2E_RETRY_BASE_DELAY_MS || 250)
 };
 
-function createBridgeClient(getClient, gatewayUrl) {
-  const getAuthToken = () => process.env.SOVEREIGN_AUTH_TOKEN || 'SOVEREIGN_DEV_TOKEN';
-
-  async function callViaHttp(method, data) {
-    const response = await fetch(`${gatewayUrl}/api/sovereign/${method}`, {
-      method: 'POST',
-      headers: {
-        'X-Sovereign-Token': getAuthToken(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(data)
-    });
-
-    if (!response.ok) {
-      const err = new Error(`HTTP ${response.status}`);
-      err.status = response.status;
-      throw err;
-    }
-    return response.json();
-  }
-
-  return {
-    async executePlugin(req) {
-      const client = await getClient();
-      if (!client) return callViaHttp('execute', req);
-      return client.ExecutePlugin(req);
-    },
-    async requestSimulation(req) {
-      const client = await getClient();
-      if (!client) return callViaHttp('simulate', req);
-      return client.RequestSimulation(req);
-    },
-    async lockEscrow(agentId, amountPi) {
-      const txId = 'escrow-fixed-id-0001';
-      const response = await callViaHttp('lock-escrow', { txId, amountPi, targetWallet: agentId });
-      return response.locked;
-    },
-    async commitPayment(req) {
-      return callViaHttp('payment', req);
-    },
-    async getSystemStatus() {
-      const response = await fetch(`${gatewayUrl}/api/status`, {
-        headers: { 'X-Sovereign-Token': getAuthToken() }
-      });
-
-      if (!response.ok) {
-        return { status: 'OFFLINE', code: response.status };
-      }
-      return response.json();
-    }
-  };
+function assertObject(value, label) {
+  assert.equal(typeof value, 'object', `${label} must be an object`);
+  assert.notEqual(value, null, `${label} must not be null`);
 }
 
-async function writeArtifact(fileName, payload) {
-  await fs.mkdir(ARTIFACT_ROOT, { recursive: true });
-  await fs.writeFile(path.join(ARTIFACT_ROOT, fileName), JSON.stringify(payload, null, 2), 'utf8');
+function validateExecuteResponse(payload) {
+  assertObject(payload, 'execute response');
+  assert.equal(typeof payload.pluginId, 'string', 'execute response.pluginId must be string');
+  assert.equal(typeof payload.success, 'boolean', 'execute response.success must be boolean');
+  assert.equal(typeof payload.outputJson, 'string', 'execute response.outputJson must be string');
+  assert.ok(Array.isArray(payload.logs), 'execute response.logs must be array');
+}
+
+function validateSimulationResponse(payload) {
+  assertObject(payload, 'simulation response');
+  for (const key of ['goalId', 'strategyRecommendation']) {
+    assert.equal(typeof payload[key], 'string', `simulation response.${key} must be string`);
+  }
+  for (const key of ['predictedRoi', 'riskScore', 'estimatedRevenueUsd']) {
+    assert.equal(typeof payload[key], 'number', `simulation response.${key} must be number`);
+  }
+  assertObject(payload.reasoning, 'simulation response.reasoning');
+}
+
+function validatePaymentResponse(payload) {
+  assertObject(payload, 'payment response');
+  assert.equal(payload.success, true, 'payment response.success must be true');
+  assert.equal(typeof payload.txId, 'string', 'payment response.txId must be string');
+  assert.equal(typeof payload.explorerUrl, 'string', 'payment response.explorerUrl must be string');
+}
+
+function validateEscrowResponse(payload) {
+  assertObject(payload, 'escrow response');
+  assert.equal(typeof payload.locked, 'boolean', 'escrow response.locked must be boolean');
+}
+
+function validateStatusResponse(payload) {
+  assertObject(payload, 'status response');
+  assert.equal(typeof payload.status, 'string', 'status response.status must be string');
+  assert.equal(typeof payload.revision, 'string', 'status response.revision must be string');
 }
 
 function enforceEnvContract() {
@@ -83,203 +77,156 @@ function isTransientNetworkError(error) {
   return typeof status === 'number' && [408, 429, 500, 502, 503, 504].includes(status);
 }
 
-async function withTransientRetry(operation, maxAttempts = 3) {
+async function withTransientRetry(operation) {
   let attempt = 1;
-  while (attempt <= maxAttempts) {
+  while (attempt <= E2E_CONFIG.retryMaxAttempts) {
     try {
       return await operation();
     } catch (error) {
-      if (attempt >= maxAttempts || !isTransientNetworkError(error)) {
+      if (attempt >= E2E_CONFIG.retryMaxAttempts || !isTransientNetworkError(error)) {
         throw error;
       }
-      await new Promise(resolve => setTimeout(resolve, attempt * 25));
+      await new Promise(resolve => setTimeout(resolve, E2E_CONFIG.retryBaseDelayMs * attempt));
       attempt += 1;
     }
   }
   throw new Error('retry loop exhausted unexpectedly');
 }
 
-async function withHttpGateway(handler) {
-  const server = http.createServer(async (req, res) => {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const body = Buffer.concat(chunks).toString('utf8');
+function createBridgeClient(gatewayUrl) {
+  const getAuthToken = () => process.env.SOVEREIGN_AUTH_TOKEN;
 
-    const result = handler(req, body);
-    res.statusCode = result.status;
-    res.setHeader('content-type', 'application/json');
-    res.end(JSON.stringify(result.body));
-  });
+  async function requestJson(method, endpoint, data) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), E2E_CONFIG.requestTimeoutMs);
 
-  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-  const address = server.address();
+    try {
+      const response = await fetch(`${gatewayUrl}${endpoint}`, {
+        method,
+        headers: {
+          'X-Sovereign-Token': getAuthToken(),
+          'Content-Type': 'application/json'
+        },
+        body: data ? JSON.stringify(data) : undefined,
+        signal: controller.signal
+      });
+
+      if (!response.ok) {
+        const err = new Error(`HTTP ${response.status} for ${endpoint}`);
+        err.status = response.status;
+        err.body = await response.text();
+        throw err;
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error?.name === 'AbortError') {
+        const timeoutError = new Error(`Request timeout after ${E2E_CONFIG.requestTimeoutMs}ms: ${endpoint}`);
+        timeoutError.status = 408;
+        throw timeoutError;
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
 
   return {
-    port: address.port,
-    close: async () => new Promise((resolve, reject) => server.close(err => (err ? reject(err) : resolve())))
+    executePlugin(req) {
+      return requestJson('POST', '/api/sovereign/execute', req);
+    },
+    requestSimulation(req) {
+      return requestJson('POST', '/api/sovereign/simulate', req);
+    },
+    lockEscrow(agentId, amountPi) {
+      const txId = process.env.E2E_ESCROW_TX_ID || `escrow-${Date.now()}`;
+      return requestJson('POST', '/api/sovereign/lock-escrow', { txId, amountPi, targetWallet: agentId });
+    },
+    commitPayment(req) {
+      return requestJson('POST', '/api/sovereign/payment', req);
+    },
+    getSystemStatus() {
+      return requestJson('GET', '/api/status');
+    }
   };
 }
 
+async function writeArtifact(fileName, payload) {
+  await fs.mkdir(ARTIFACT_ROOT, { recursive: true });
+  await fs.writeFile(path.join(ARTIFACT_ROOT, fileName), JSON.stringify(payload, null, 2), 'utf8');
+}
+
 test.beforeEach(() => {
-  process.env.SOVEREIGN_AUTH_TOKEN = 'token-e2e-fixed';
-  process.env.AGENT_SYSTEM_SECRET = 'agent-secret-e2e-fixed';
-  process.env.SOVEREIGN_ENGINE_URL = 'http://127.0.0.1:50051';
   enforceEnvContract();
 });
 
-test('1) sandbox plugin execution (happy path + invalid token)', async () => {
+test('1) sandbox plugin execution against real gateway', async () => {
   const startedAt = new Date().toISOString();
-  const events = [];
+  const bridge = createBridgeClient(process.env.SOVEREIGN_GATEWAY_URL);
 
-  const gateway = await withHttpGateway((req, body) => {
-    events.push({ at: new Date().toISOString(), message: 'gateway_request', detail: { url: req.url, token: req.headers['x-sovereign-token'] } });
-    if (req.url !== '/api/sovereign/execute') return { status: 404, body: { error: 'not_found' } };
-
-    if (req.headers['x-sovereign-token'] !== 'token-e2e-fixed') {
-      return { status: 401, body: { error: 'invalid_token' } };
-    }
-
-    const parsed = JSON.parse(body);
-    return { status: 200, body: { pluginId: parsed.pluginId, success: true, outputJson: '{"deterministic":true}', logs: ['sandbox started', 'sandbox finished'] } };
-  });
-
-  const bridge = createBridgeClient(async () => null, `http://127.0.0.1:${gateway.port}`);
-
-  const happy = await bridge.executePlugin({
-    pluginId: DETERMINISTIC.pluginId,
-    sourceCode: DETERMINISTIC.sourceCode,
+  const happy = await withTransientRetry(() => bridge.executePlugin({
+    pluginId: E2E_CONFIG.pluginId,
+    sourceCode: E2E_CONFIG.sourceCode,
     envVars: { SAFE_MODE: 'true' },
     allowedCapabilities: ['math', 'json']
-  });
+  }));
+
+  validateExecuteResponse(happy);
   assert.equal(happy.success, true);
 
-  process.env.SOVEREIGN_AUTH_TOKEN = 'bad-token-fixed';
-  await assert.rejects(
-    () => bridge.executePlugin({ pluginId: 'plugin-invalid', sourceCode: DETERMINISTIC.sourceCode, envVars: {}, allowedCapabilities: ['math'] }),
-    /HTTP 401/
-  );
-
-  await gateway.close();
   await writeArtifact('01-sandbox-plugin.json', {
-    scenario: 'sandbox_plugin_execution', startedAt, endedAt: new Date().toISOString(), deterministicData: DETERMINISTIC, events
+    scenario: 'sandbox_plugin_execution', startedAt, endedAt: new Date().toISOString(), config: E2E_CONFIG, result: happy
   });
 });
 
-test('2) simulation request flow (gRPC available + HTTP fallback)', async () => {
+test('2) simulation request flow against real gateway', async () => {
   const startedAt = new Date().toISOString();
-  const events = [];
+  const bridge = createBridgeClient(process.env.SOVEREIGN_GATEWAY_URL);
 
-  const deterministicResponse = {
-    goalId: DETERMINISTIC.goalId,
-    predictedRoi: 12.5,
-    riskScore: 0.18,
-    strategyRecommendation: 'Hold neutral hedge',
-    reasoning: { logicChain: 'deterministic-logic-chain', criticalRisks: ['latency'], opportunities: ['spread_capture'], confidenceScore: '0.91' },
-    estimatedRevenueUsd: 1337
-  };
-
-  const bridgeGrpc = createBridgeClient(async () => ({
-    RequestSimulation: req => {
-      events.push({ at: new Date().toISOString(), message: 'grpc_request', detail: req });
-      return deterministicResponse;
-    }
-  }), 'http://unused');
-
-  const grpcResult = await bridgeGrpc.requestSimulation({ goalId: DETERMINISTIC.goalId, parallelInstances: 3, modelVersion: 'gemini-1.5-pro' });
-  assert.deepEqual(grpcResult, deterministicResponse);
-
-  let fallbackAttempts = 0;
-  const gateway = await withHttpGateway(req => {
-    if (req.url !== '/api/sovereign/simulate') return { status: 404, body: { error: 'not_found' } };
-    fallbackAttempts += 1;
-    if (fallbackAttempts === 1) return { status: 503, body: { error: 'transient_unavailable' } };
-    return { status: 200, body: deterministicResponse };
-  });
-
-  const bridgeHttp = createBridgeClient(async () => null, `http://127.0.0.1:${gateway.port}`);
-  const fallbackResult = await withTransientRetry(() =>
-    bridgeHttp.requestSimulation({ goalId: DETERMINISTIC.goalId, parallelInstances: 3, modelVersion: 'gemini-1.5-pro' })
+  const simulation = await withTransientRetry(() =>
+    bridge.requestSimulation({ goalId: E2E_CONFIG.goalId, parallelInstances: 3, modelVersion: 'gemini-1.5-pro' })
   );
 
-  assert.equal(fallbackResult.goalId, DETERMINISTIC.goalId);
-  assert.equal(fallbackAttempts, 2);
+  validateSimulationResponse(simulation);
+  assert.equal(simulation.goalId, E2E_CONFIG.goalId);
 
-  await gateway.close();
   await writeArtifact('02-simulation-flow.json', {
-    scenario: 'simulation_grpc_http_fallback', startedAt, endedAt: new Date().toISOString(), deterministicData: DETERMINISTIC, events
+    scenario: 'simulation_real_gateway', startedAt, endedAt: new Date().toISOString(), config: E2E_CONFIG, result: simulation
   });
 });
 
-test('3) payment/escrow critical path', async () => {
+test('3) payment/escrow critical path against real gateway', async () => {
   const startedAt = new Date().toISOString();
-  const events = [];
-  let paymentAttempts = 0;
+  const bridge = createBridgeClient(process.env.SOVEREIGN_GATEWAY_URL);
 
-  const gateway = await withHttpGateway((req, body) => {
-    if (req.url === '/api/sovereign/lock-escrow') {
-      events.push({ at: new Date().toISOString(), message: 'lock_escrow', detail: JSON.parse(body) });
-      return { status: 200, body: { locked: true, escrowAddress: 'escrow-fixed-addr-001' } };
-    }
-
-    if (req.url === '/api/sovereign/payment') {
-      paymentAttempts += 1;
-      if (paymentAttempts === 1) return { status: 502, body: { error: 'temporary_gateway_issue' } };
-      return { status: 200, body: { success: true, txId: 'tx-fixed-0001', explorerUrl: 'https://explorer.pi/tx-fixed-0001' } };
-    }
-
-    return { status: 404, body: { error: 'not_found' } };
-  });
-
-  const bridge = createBridgeClient(async () => null, `http://127.0.0.1:${gateway.port}`);
-  const escrowLocked = await bridge.lockEscrow(DETERMINISTIC.escrowAgentId, 7.5);
-  assert.equal(escrowLocked, true);
+  const escrow = await withTransientRetry(() => bridge.lockEscrow(E2E_CONFIG.escrowAgentId, 7.5));
+  validateEscrowResponse(escrow);
+  assert.equal(escrow.locked, true);
 
   const payment = await withTransientRetry(() => bridge.commitPayment({
-    recipientId: DETERMINISTIC.paymentRecipientId,
+    recipientId: E2E_CONFIG.paymentRecipientId,
     amountPi: 7.5,
     agentAuthToken: process.env.AGENT_SYSTEM_SECRET,
     priority: 'HIGH'
   }));
 
-  assert.equal(payment.success, true);
-  assert.equal(paymentAttempts, 2);
+  validatePaymentResponse(payment);
 
-  await gateway.close();
   await writeArtifact('03-payment-escrow.json', {
-    scenario: 'payment_escrow_critical_path', startedAt, endedAt: new Date().toISOString(), deterministicData: DETERMINISTIC, events
+    scenario: 'payment_escrow_critical_path', startedAt, endedAt: new Date().toISOString(), config: E2E_CONFIG, escrow, payment
   });
 });
 
-test('4) health/status endpoints and recovery behavior', async () => {
+test('4) health/status endpoint strict validation', async () => {
   const startedAt = new Date().toISOString();
-  const events = [];
-  let statusAttempt = 0;
+  const bridge = createBridgeClient(process.env.SOVEREIGN_GATEWAY_URL);
 
-  const gateway = await withHttpGateway(req => {
-    if (req.url !== '/api/status') return { status: 404, body: { error: 'not_found' } };
-    statusAttempt += 1;
-    if (statusAttempt === 1) return { status: 503, body: { status: 'OFFLINE' } };
-    return { status: 200, body: { status: 'ONLINE', subsystem: 'sovereign-engine', revision: 'e2e-fixed-r1' } };
-  });
-
-  const bridge = createBridgeClient(async () => null, `http://127.0.0.1:${gateway.port}`);
-  const initial = await bridge.getSystemStatus();
-  assert.equal(initial.status, 'OFFLINE');
-
-  const recovered = await withTransientRetry(async () => {
-    const status = await bridge.getSystemStatus();
-    if (status.status === 'OFFLINE') {
-      const err = new Error('still offline');
-      err.status = 503;
-      throw err;
-    }
-    return status;
-  });
-
-  assert.equal(recovered.status, 'ONLINE');
-  await gateway.close();
+  const status = await withTransientRetry(() => bridge.getSystemStatus());
+  validateStatusResponse(status);
+  assert.equal(status.status, process.env.E2E_EXPECTED_SYSTEM_STATUS);
+  assert.equal(status.revision, process.env.E2E_EXPECTED_SYSTEM_REVISION);
 
   await writeArtifact('04-health-status-recovery.json', {
-    scenario: 'health_status_recovery', startedAt, endedAt: new Date().toISOString(), deterministicData: DETERMINISTIC, events
+    scenario: 'health_status_strict_validation', startedAt, endedAt: new Date().toISOString(), status
   });
 });
