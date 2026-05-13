@@ -1,8 +1,8 @@
-
 export type ErrorCategory = 'AUTH' | 'NETWORK' | 'BUILD' | 'VALIDATION' | 'DEPENDENCY';
 
 export interface CorrelationContext {
   requestId: string;
+  correlation_id?: string; // Compatibility with both styles if needed
   correlationId: string;
   authContext: string;
 }
@@ -21,14 +21,21 @@ interface StructuredLog {
 }
 
 export class StructuredError extends Error {
+  public readonly category: ErrorCategory;
+  public readonly status: number;
+  public readonly details?: Record<string, unknown>;
+
   constructor(
-    public readonly category: ErrorCategory,
+    category: ErrorCategory,
     message: string,
-    public readonly status = 500,
-    public readonly details?: Record<string, unknown>
+    status = 500,
+    details?: Record<string, unknown>
   ) {
     super(message);
     this.name = 'StructuredError';
+    this.category = category;
+    this.status = status;
+    this.details = details;
   }
 
   toResponseBody(context: CorrelationContext) {

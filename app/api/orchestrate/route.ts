@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { MASOrchestrator } from '../../../core/engine/mas-orchestrator';
+import { MASOrchestrator } from '@/core/engine/mas-orchestrator';
+import { validateOrchestrateRequest } from '@/core/engine/orchestrate-validator';
 import {
   logStructured,
   mapUnknownError,
@@ -12,11 +13,14 @@ export async function POST(req: Request) {
   const context = resolveCorrelationContext(req.headers);
 
   try {
-    const { intent, budget } = await req.json();
+    const body = await req.json();
+    const validation = validateOrchestrateRequest(body);
 
-    if (!intent) {
-      throw new StructuredError('VALIDATION', 'Intent is required.', 400);
+    if (!validation.isValid) {
+      throw new StructuredError('VALIDATION', validation.error!, 400);
     }
+
+    const { intent, budget } = validation.data!;
 
     logStructured({
       component: 'NEXT_API',
