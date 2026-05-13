@@ -35,7 +35,7 @@ type PiPayment struct {
 type PiPlatformClient struct {
 	BaseURL string
 	APIKey  string
-	Client  *http.Client
+	Client  HTTPDoer
 }
 
 func NewPiPlatformClient() *PiPlatformClient {

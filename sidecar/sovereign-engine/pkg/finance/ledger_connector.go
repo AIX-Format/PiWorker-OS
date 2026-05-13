@@ -26,10 +26,19 @@ type LedgerEvent struct {
 	Timestamp time.Time
 }
 
+// HTTPDoer abstracts the subset of *http.Client behavior the LedgerConnector
+// actually uses. Defining it here lets tests inject a mock without depending
+// on the real network stack while still accepting *http.Client at runtime,
+// which satisfies the interface implicitly.
+type HTTPDoer interface {
+	Get(url string) (*http.Response, error)
+	Do(req *http.Request) (*http.Response, error)
+}
+
 type LedgerConnector struct {
 	NetworkURL     string
 	PlatformClient *PiPlatformClient
-	Client         *http.Client
+	Client         HTTPDoer
 	processedTx    sync.Map
 }
 
