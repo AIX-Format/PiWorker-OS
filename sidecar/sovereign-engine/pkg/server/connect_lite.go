@@ -84,7 +84,24 @@ func (s *SovereignServer) ConnectLiteHandler() http.Handler {
 		if err := json.Unmarshal(body, &req); err != nil {
 			return nil, err
 		}
-		return s.QueryMemory(ctx, &req)
+		resp, err := s.QueryMemory(ctx, &req)
+		if err != nil {
+			return nil, err
+		}
+		// The regenerated pb.MemoryList struct tags `insights` with
+		// json:",omitempty", which would silently drop the field when
+		// QueryMemory returns zero matches and produce '{}' on the wire
+		// instead of the previous stable '{"insights":[]}' shape that
+		// the map-based handler emitted. Wrap into a local type without
+		// the omitempty tag and force a non-nil slice so the wire
+		// contract stays the same for consumers that expect an array.
+		insights := resp.GetInsights()
+		if insights == nil {
+			insights = []*pb.MemoryInsight{}
+		}
+		return struct {
+			Insights []*pb.MemoryInsight `json:"insights"`
+		}{Insights: insights}, nil
 	}))
 
 	mux.HandleFunc(prefix+"EvaluateVortex", s.wrapHandler(func(ctx context.Context, body []byte) (any, error) {

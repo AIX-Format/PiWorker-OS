@@ -141,7 +141,10 @@ func (j *SovereignJournal) readAllEntries() ([]JournalEntry, error) {
 //
 // The tally keys by (id, namespace) so two intents with the same id
 // in different namespaces (e.g. 'payment' vs 'simulation') count
-// separately, matching the journal's actual record structure.
+// separately, matching the journal's actual record structure. When
+// the same (id, namespace) sees N un-matched BEGINs (e.g. concurrent
+// executions reusing the same plugin id), all N are counted as
+// active, not collapsed to 1.
 func (j *SovereignJournal) GetActiveCount() int {
 	entries, err := j.readAllEntries()
 	if err != nil {
@@ -161,7 +164,7 @@ func (j *SovereignJournal) GetActiveCount() int {
 	active := 0
 	for _, v := range tally {
 		if v > 0 {
-			active++
+			active += v
 		}
 	}
 	return active
