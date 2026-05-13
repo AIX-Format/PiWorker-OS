@@ -41,7 +41,7 @@ jobs:
         # Pin action versions to a vetted release tag for supply-chain security and reproducible runs.
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.x"
+          go-version: "1.25.10"
           cache-dependency-path: go.sum
 
       - name: Verify Go module integrity
@@ -169,7 +169,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.25.x"
+          go-version: "1.25.10"
           cache-dependency-path: go.sum
 
       - name: Install dependencies
