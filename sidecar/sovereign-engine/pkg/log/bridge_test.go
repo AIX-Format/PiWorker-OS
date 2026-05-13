@@ -63,6 +63,33 @@ func TestOpEmitsCanonicalFields(t *testing.T) {
 	}
 }
 
+func TestTimestampIsAlwaysUTC(t *testing.T) {
+	// Hostile TZ: even on a host pinned to a non-UTC zone, the
+	// emitted `timestamp` field must end in `Z` and contain no
+	// "+HH:MM" or "-HH:MM" offset. Dashboards and log routers
+	// assume canonical UTC ordering.
+	t.Setenv("LOG_LEVEL", "debug")
+	t.Setenv("TZ", "America/Los_Angeles")
+
+	var buf bytes.Buffer
+	logger := New(ComponentAPIBridge, &buf)
+	Op(context.Background(), logger, "op", "", "msg")
+
+	record := decodeLine(t, bytes.TrimSpace(buf.Bytes()))
+	ts, ok := record["timestamp"].(string)
+	if !ok {
+		t.Fatalf("timestamp field missing or not string: %v", record["timestamp"])
+	}
+	if !strings.HasSuffix(ts, "Z") {
+		t.Errorf("timestamp must be UTC (end with Z), got %q", ts)
+	}
+	if strings.Contains(ts, "+") || (strings.Count(ts, "-") > 2) {
+		// RFC3339 dates contain 2 hyphens in the date; any extra
+		// hyphen would indicate a "-HH:MM" tz offset slipping through.
+		t.Errorf("timestamp must not carry a local tz offset, got %q", ts)
+	}
+}
+
 func TestOpKeepsErrorCodeOnFailure(t *testing.T) {
 	// The complement of the omitempty rule: when error_code IS set,
 	// it must appear on the wire so failure paths still surface.

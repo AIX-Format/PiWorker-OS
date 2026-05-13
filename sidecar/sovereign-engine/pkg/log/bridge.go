@@ -25,6 +25,7 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+	"time"
 )
 
 // Field names match the bridgeLog struct that existed in api/index.go
@@ -81,9 +82,16 @@ func New(component string, w io.Writer) *slog.Logger {
 }
 
 // renameDefaultKeys maps slog's default top-level keys to the names
-// that the previous bridgeLog struct used. Only the top-level group
-// is touched (groups == nil) so attribute keys inside grouped logs
-// are left alone.
+// that the previous bridgeLog struct used, and normalizes the time
+// value to UTC. Only the top-level group is touched
+// (groups == nil) so attribute keys inside grouped logs are left
+// alone.
+//
+// The UTC normalization preserves the legacy contract: the old
+// emitBridgeLog wrote time.Now().UTC().Format(time.RFC3339Nano), so
+// dashboards and ordering windows have always assumed canonical
+// `...Z` timestamps. Without this, a host with TZ=America/Los_Angeles
+// would emit "-07:00" offsets and silently break log windowing.
 func renameDefaultKeys(groups []string, a slog.Attr) slog.Attr {
 	if len(groups) > 0 {
 		return a
@@ -91,6 +99,9 @@ func renameDefaultKeys(groups []string, a slog.Attr) slog.Attr {
 	switch a.Key {
 	case slog.TimeKey:
 		a.Key = "timestamp"
+		if t, ok := a.Value.Any().(time.Time); ok {
+			a.Value = slog.TimeValue(t.UTC())
+		}
 	case slog.MessageKey:
 		a.Key = "message"
 	}
