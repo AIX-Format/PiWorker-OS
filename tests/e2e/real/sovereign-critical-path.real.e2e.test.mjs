@@ -1,12 +1,12 @@
 /**
- * REAL E2E LANE.
+ * REAL E2E LANE. The only E2E lane.
  *
  * Talks to a real deployed Sovereign Engine (Go sidecar + HTTP bridge) over
- * the network. No in-process HTTP server, no `withHttpGateway`, no hardcoded
- * "fixed" tokens. All credentials and the target URL must come from the
+ * the network. No in-process HTTP server, no mock gateway, no hardcoded
+ * fixture tokens. All credentials and the target URL must come from the
  * environment.
  *
- * Required env (otherwise the suite is skipped, not failed):
+ * Required env (otherwise the suite FAILS; it does not skip):
  *   - SOVEREIGN_STAGING_URL  (e.g. https://staging.piworker.example)
  *   - SOVEREIGN_AUTH_TOKEN   (real token issued for the staging env)
  *   - AGENT_SYSTEM_SECRET    (HMAC secret used for plugin signing)
@@ -44,7 +44,15 @@ const MAX_RETRIES = Number.parseInt(process.env.REAL_E2E_RETRIES || '2', 10);
 const AGENT_ID = process.env.REAL_E2E_AGENT_ID || 'agent-real-e2e';
 const AMOUNT_PI = Number.parseFloat(process.env.REAL_E2E_AMOUNT_PI || '0.0001');
 
-const HAS_ENV = Boolean(STAGING_URL) && Boolean(AUTH_TOKEN) && Boolean(AGENT_SECRET);
+// Fail fast if env is missing. The real lane has no mock fallback.
+const MISSING_ENV = [];
+if (!STAGING_URL) MISSING_ENV.push('SOVEREIGN_STAGING_URL');
+if (!AUTH_TOKEN) MISSING_ENV.push('SOVEREIGN_AUTH_TOKEN');
+if (!AGENT_SECRET) MISSING_ENV.push('AGENT_SYSTEM_SECRET');
+if (MISSING_ENV.length > 0) {
+  console.error(`[real-e2e] Missing required env: ${MISSING_ENV.join(', ')}`);
+  process.exit(1);
+}
 
 /** @type {Array<Record<string, unknown>>} */
 const scenarios = [];
@@ -129,7 +137,6 @@ test.before(async () => {
 });
 
 test.after(async () => {
-  if (!HAS_ENV) return;
   const passed = scenarios.filter((s) => s.outcome === 'PASS').length;
   const report = {
     lane: 'real',
@@ -156,19 +163,19 @@ test.after(async () => {
   );
 });
 
-test('real e2e env contract', { skip: HAS_ENV ? false : 'SOVEREIGN_STAGING_URL / SOVEREIGN_AUTH_TOKEN / AGENT_SYSTEM_SECRET not set; real lane skipped' }, () => {
+test('real e2e env contract', () => {
   assert.ok(STAGING_URL.startsWith('http'), 'SOVEREIGN_STAGING_URL must be a fully-qualified URL');
   assert.ok(AUTH_TOKEN.length >= 8, 'SOVEREIGN_AUTH_TOKEN looks too short');
   assert.ok(AGENT_SECRET.length >= 8, 'AGENT_SYSTEM_SECRET looks too short');
 });
 
-test('health endpoint responds', { skip: !HAS_ENV && 'real lane skipped' }, async () => {
+test('health endpoint responds', async () => {
   const result = await callJson('GET', '/health');
   recordScenario('health', '/health', result);
   assert.equal(result.ok, true, `health failed: ${result.status} ${JSON.stringify(result.body)}`);
 });
 
-test('status endpoint reports ONLINE', { skip: !HAS_ENV && 'real lane skipped' }, async () => {
+test('status endpoint reports ONLINE', async () => {
   const result = await callJson('GET', '/api/status');
   recordScenario('status', '/api/status', result);
   assert.equal(result.ok, true, `status failed: ${result.status}`);
@@ -176,7 +183,7 @@ test('status endpoint reports ONLINE', { skip: !HAS_ENV && 'real lane skipped' }
   assert.ok(['ONLINE', 'OPERATIONAL'].includes(result.body.status), `unexpected status: ${result.body.status}`);
 });
 
-test('plugin execute roundtrips with a real signature', { skip: !HAS_ENV && 'real lane skipped' }, async () => {
+test('plugin execute roundtrips with a real signature', async () => {
   const sourceCode = 'export default async () => ({ ok: true, real: true });';
   const signature = crypto.createHmac('sha256', AGENT_SECRET).update(sourceCode).digest('hex');
   const result = await callJson('POST', '/api/sovereign/execute', {
@@ -190,7 +197,7 @@ test('plugin execute roundtrips with a real signature', { skip: !HAS_ENV && 'rea
   assert.equal(result.ok, true, `execute failed: ${result.status} ${JSON.stringify(result.body)}`);
 });
 
-test('simulation request returns reasoning payload', { skip: !HAS_ENV && 'real lane skipped' }, async () => {
+test('simulation request returns reasoning payload', async () => {
   const result = await callJson('POST', '/api/sovereign/simulate', {
     goalId: `real-e2e-goal-${crypto.randomBytes(3).toString('hex')}`,
     instances: 3,
@@ -201,7 +208,7 @@ test('simulation request returns reasoning payload', { skip: !HAS_ENV && 'real l
   assert.equal(result.ok, true, `simulate failed: ${result.status} ${JSON.stringify(result.body)}`);
 });
 
-test('escrow lock succeeds for a small amount', { skip: !HAS_ENV && 'real lane skipped' }, async () => {
+test('escrow lock succeeds for a small amount', async () => {
   const result = await callJson('POST', '/api/sovereign/lock-escrow', {
     txId: `real-e2e-tx-${crypto.randomBytes(4).toString('hex')}`,
     amountPi: AMOUNT_PI,
@@ -211,7 +218,7 @@ test('escrow lock succeeds for a small amount', { skip: !HAS_ENV && 'real lane s
   assert.equal(result.ok, true, `lock-escrow failed: ${result.status} ${JSON.stringify(result.body)}`);
 });
 
-test('events stream is reachable (HEAD-style probe)', { skip: !HAS_ENV && 'real lane skipped' }, async () => {
+test('events stream is reachable (HEAD-style probe)', async () => {
   const startedAt = Date.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 2000);

@@ -1,45 +1,26 @@
-# Sovereign E2E Suites
+# Sovereign E2E Suite
 
-There are two clearly separated lanes. Keep them separate; never use a green
-simulation run as a release-readiness signal.
+There is one lane. It is real. No mocks, no in-process gateways, no fixture
+tokens. A green run means the suite actually exercised a deployed Sovereign
+Engine.
 
-## Lane 1: Simulation (fast, local)
+The previous simulation harness (`sovereign-critical-path.e2e.test.mjs`,
+`offline-simulation.ts`, `neural-fiscal-loop.test.ts`, `sandbox-audit.spec.ts`
+and the corresponding mocked artifacts under `tests/e2e/artifacts/`) has been
+removed. The `test:tier4` script is no longer a no-op; it is an alias for
+`test:e2e:real`.
 
-`tests/e2e/sovereign-critical-path.e2e.test.mjs`
-
-- Stands up an **in-process HTTP gateway** via `withHttpGateway`.
-- Uses deterministic fixtures (`token-e2e-fixed`, `agent-secret-e2e-fixed`,
-  fixed plugin/goal/tx IDs).
-- Locks down the bridge client's wire shape, retry policy
-  (`withTransientRetry` on 408/429/5xx), and auth/error handling.
-- **Does not** call the real Go sidecar, real Pi Horizon, real Soroban RPC,
-  or any deployed URL.
-
-Run it with:
-
-```bash
-npm run test:e2e:simulation
-```
-
-What a green run here proves: the TypeScript/Node bridge code talks to *some*
-HTTP server using the expected request/response shape and retries correctly.
-It does not prove that staging is healthy, that the Go sidecar is reachable,
-or that real Pi/Soroban calls succeed.
-
-## Lane 2: Real (slow, against staging)
+## Real lane
 
 `tests/e2e/real/sovereign-critical-path.real.e2e.test.mjs`
 
-- Hits a real deployed Sovereign Engine over the network.
-- No in-process gateway, no hardcoded "fixed" tokens.
-- Skips cleanly (exit 0) when the required env is missing, with a loud notice.
-
-Required env:
+Required env (the suite exits non-zero before running any test if any of
+these are missing):
 
 | Variable | Purpose |
 |----------|---------|
-| `SOVEREIGN_STAGING_URL` | Base URL of the deployed engine (e.g. `https://staging.piworker.example`). `SOVEREIGN_ENGINE_URL` is accepted as a fallback. |
-| `SOVEREIGN_AUTH_TOKEN`  | Real bearer token for the `X-Sovereign-Token` header in staging. |
+| `SOVEREIGN_STAGING_URL` | Base URL of the deployed engine. `SOVEREIGN_ENGINE_URL` is accepted as a fallback. |
+| `SOVEREIGN_AUTH_TOKEN`  | Real bearer token for the `X-Sovereign-Token` header on staging. |
 | `AGENT_SYSTEM_SECRET`   | HMAC secret used to sign plugin source for `/api/sovereign/execute`. |
 
 Optional:
@@ -60,7 +41,7 @@ AGENT_SYSTEM_SECRET=... \
 npm run test:e2e:real
 ```
 
-Scenarios exercised (one node:test test each):
+Scenarios exercised:
 
 1. `health` &mdash; `GET /health`
 2. `status` &mdash; `GET /api/status` (must report ONLINE/OPERATIONAL)
@@ -73,8 +54,7 @@ Each scenario records `duration_ms`, `status`, `attempts`, and `outcome`.
 
 ## Artifacts and baseline
 
-After every real-lane run, two files are written under
-`tests/e2e/artifacts/`:
+Every run writes two files under `tests/e2e/artifacts/`:
 
 - `real-run-<ISO>.json` (immutable history, one per run)
 - `real-latest.json` (overwritten each run)
@@ -90,10 +70,12 @@ p50/p95 duration, per-scenario success rate, and the top failing endpoint
 across all recorded runs. Commit a `baseline-metrics.json` snapshot when you
 declare a release candidate green so regressions are easy to spot.
 
-## Recommended cadence
+## Cadence
 
-- **On PR**: `npm run test:e2e:simulation` (cheap, deterministic).
-- **Nightly / pre-release**: `npm run test:e2e:real` against staging, then
-  `npm run test:e2e:baseline`.
-- **Do not** rely on `npm run test:tier4` as a quality gate; it is now a
-  no-op that prints a deprecation notice.
+- **PR CI**: `npm run test:e2e:real` against a stable staging deployment.
+- **Nightly / pre-release**: `npm run test:e2e:real` followed by
+  `npm run test:e2e:baseline`, with the resulting `baseline-metrics.json`
+  diffed against the previously committed snapshot.
+
+If staging is unavailable, the suite fails. That is by design: a passing E2E
+build must mean we actually talked to staging.

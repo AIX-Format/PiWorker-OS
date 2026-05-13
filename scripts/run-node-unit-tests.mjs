@@ -12,7 +12,6 @@ const isNodeUnitTest = (filePath) => {
   if (normalized.includes('/e2e/')) return false;
   if (normalized.endsWith('.e2e.test.ts') || normalized.endsWith('.e2e.test.mjs')) return false;
   if (normalized.endsWith('.real.e2e.test.mjs')) return false;
-  if (normalized.endsWith('sandbox-audit.spec.ts')) return false;
   return true;
 };
 

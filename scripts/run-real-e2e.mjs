@@ -1,13 +1,11 @@
 #!/usr/bin/env node
 /**
- * Real E2E lane runner.
+ * Real E2E lane runner. The only E2E lane.
  *
- * - When SOVEREIGN_STAGING_URL is set, runs the real lane against staging.
- * - When it is unset, exits 0 with a clear "skipped" message so local
- *   developers and PR CI are not blocked, but the absence is loud.
- *
- * The simulation lane is run separately by `npm run test:e2e:simulation`
- * and must never be used as a release-readiness signal.
+ * No mocks, no in-process gateways, no fixture tokens. The suite talks to a
+ * real deployed Sovereign Engine. If the required env is not set, this
+ * script FAILS (exit 1) rather than silently passing. That is intentional:
+ * a green CI must mean we actually exercised staging.
  */
 import { spawn } from 'node:child_process';
 import path from 'node:path';
@@ -18,14 +16,18 @@ const stagingUrl = (process.env.SOVEREIGN_STAGING_URL || process.env.SOVEREIGN_E
 const authToken = (process.env.SOVEREIGN_AUTH_TOKEN || '').trim();
 const agentSecret = (process.env.AGENT_SYSTEM_SECRET || '').trim();
 
-if (!stagingUrl || !authToken || !agentSecret) {
-  console.log('⏭️  [test:e2e:real] Skipped: real lane requires');
-  console.log('    - SOVEREIGN_STAGING_URL (or SOVEREIGN_ENGINE_URL)');
-  console.log('    - SOVEREIGN_AUTH_TOKEN');
-  console.log('    - AGENT_SYSTEM_SECRET');
-  console.log('    Set these and rerun to exercise the real lane.');
-  console.log('    NOTE: the simulation lane (test:e2e:simulation) is NOT a substitute.');
-  process.exit(0);
+const missing = [];
+if (!stagingUrl) missing.push('SOVEREIGN_STAGING_URL (or SOVEREIGN_ENGINE_URL)');
+if (!authToken) missing.push('SOVEREIGN_AUTH_TOKEN');
+if (!agentSecret) missing.push('AGENT_SYSTEM_SECRET');
+
+if (missing.length > 0) {
+  console.error('❌ [test:e2e:real] Refusing to run: required env not set.');
+  for (const v of missing) console.error(`    - ${v}`);
+  console.error('');
+  console.error('    The real E2E lane talks to a deployed Sovereign Engine.');
+  console.error('    There is no mock fallback. Set the env vars and rerun.');
+  process.exit(1);
 }
 
 console.log(`🛰️  [test:e2e:real] Running real lane against ${stagingUrl}`);
