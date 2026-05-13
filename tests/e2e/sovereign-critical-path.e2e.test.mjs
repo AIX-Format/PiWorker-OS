@@ -1,3 +1,19 @@
+/**
+ * SIMULATION LANE (not real E2E).
+ *
+ * This file is a simulation harness: it stands up an in-process HTTP server
+ * via `withHttpGateway` and asserts the bridge client's wire shape and
+ * retry/auth behavior against deterministic fixtures (e.g. `token-e2e-fixed`,
+ * `agent-secret-e2e-fixed`).
+ *
+ * It is fast and deterministic, but it does NOT exercise the real Go sidecar,
+ * the real Pi Horizon / Soroban endpoints, or a real deployed staging URL.
+ * Do NOT treat a green run here as a release-readiness signal.
+ *
+ * For real end-to-end verification against a deployed environment, see
+ * `tests/e2e/real/sovereign-critical-path.real.e2e.test.mjs` and the
+ * `npm run test:e2e:real` script.
+ */
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
