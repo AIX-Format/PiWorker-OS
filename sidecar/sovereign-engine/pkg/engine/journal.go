@@ -71,17 +71,51 @@ func (j *SovereignJournal) Fail(id, ns, reason string) error {
 	return j.log(JournalEntry{ID: id, Type: "FAIL", Namespace: ns, Data: map[string]string{"reason": reason}})
 }
 
+// readAllEntries decodes every JournalEntry from the underlying file
+// without applying the Replay() filter that collapses BEGIN+COMMIT/FAIL
+// pairs. Callers that want raw history (counts, audits, drift checks)
+// must use this instead of Replay() to avoid operating on pre-filtered
+// state. Replay() itself keys only by ID, which silently undercounts
+// when the same ID exists across namespaces.
+func (j *SovereignJournal) readAllEntries() ([]JournalEntry, error) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+
+	f, err := os.Open(j.filePath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []JournalEntry{}, nil
+		}
+		return nil, err
+	}
+	defer f.Close()
+
+	var entries []JournalEntry
+	decoder := json.NewDecoder(f)
+	for decoder.More() {
+		var entry JournalEntry
+		if err := decoder.Decode(&entry); err != nil {
+			log.Printf("⚠️ [Journal] Skipping corrupted entry: %v", err)
+			continue
+		}
+		entries = append(entries, entry)
+	}
+	return entries, nil
+}
+
 // GetActiveCount returns the number of intents currently in flight,
 // defined as entries with a BEGIN log line that have no matching
 // COMMIT or FAIL entry yet. Used by the HTTP bridge to render the
 // 'active_intents' field on /api/status.
+//
+// The tally keys by (id, namespace) so two intents with the same id
+// in different namespaces (e.g. 'payment' vs 'simulation') count
+// separately, matching the journal's actual record structure.
 func (j *SovereignJournal) GetActiveCount() int {
-	entries, err := j.Replay()
+	entries, err := j.readAllEntries()
 	if err != nil {
 		return 0
 	}
-	// Tally per (id, namespace) tuple: +1 on BEGIN, -1 on COMMIT/FAIL.
-	// Any tuple still at +1 after the scan is an in-flight intent.
 	type key struct{ id, ns string }
 	tally := make(map[key]int, len(entries))
 	for _, e := range entries {

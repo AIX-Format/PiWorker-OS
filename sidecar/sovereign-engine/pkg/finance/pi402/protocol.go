@@ -2,6 +2,7 @@ package pi402
 
 import (
 	"context"
+	"crypto/ed25519"
 	"fmt"
 	"log"
 	"sync"
@@ -56,20 +57,24 @@ func (e *Pi402Engine) AuthorizeWallet(masterSeed []byte, agentID string) (*Agent
 	return sw, nil
 }
 
-// VerifyAgentSignature ensures the transaction was signed by the agent's unique key.
+// VerifyAgentSignature ensures the transaction was signed by the agent's
+// unique ed25519 key. Returns false on any of: unknown agent, missing
+// public key, malformed map entry, or invalid signature. Callers MUST
+// gate payout/authorization on a true return.
 func (e *Pi402Engine) VerifyAgentSignature(agentID string, message []byte, signature []byte) bool {
 	val, ok := e.ActiveWallets.Load(agentID)
 	if !ok {
 		return false
 	}
-
-	_ = val.(*AgentSubWallet) // type-assert to validate the cast; verification stub below
-	// In a real implementation, we would use ed25519.Verify against
-	// the agent's stored public key. For this protocol bridge we
-	// trust the server-side session wallet to authenticate the
-	// caller. Tracked as a follow-up: wire ed25519.Verify through
-	// AgentSubWallet.PublicKey when the keypair plumbing lands.
-	_ = message
-	_ = signature
-	return true
+	wallet, ok := val.(*AgentSubWallet)
+	if !ok || wallet == nil {
+		// Defensive: the map should never contain anything else, but
+		// a wrong type or nil entry must never silently authorize a
+		// signature.
+		return false
+	}
+	if len(wallet.PublicKey) == 0 {
+		return false
+	}
+	return ed25519.Verify(wallet.PublicKey, message, signature)
 }

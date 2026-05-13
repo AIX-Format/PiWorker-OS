@@ -375,6 +375,13 @@ func (s *SovereignServer) StoreMemory(ctx context.Context, req *pb.MemoryInsight
 	if req == nil {
 		return nil, fmt.Errorf("nil MemoryInsight")
 	}
+	// NewSovereignServer only logs (does not fail) when
+	// memory.NewMemoryStore returns an error, so s.Memory can legally
+	// be nil at this point. Bail with a clean error before the
+	// dereference panics on the Store call.
+	if s.Memory == nil {
+		return nil, fmt.Errorf("memory store not initialized")
+	}
 	insight := memory.SovereignInsight{
 		ID:        req.Id,
 		AgentID:   req.AgentId,
@@ -392,32 +399,48 @@ func (s *SovereignServer) StoreMemory(ctx context.Context, req *pb.MemoryInsight
 // ApprovePiPayment is the server-side bridge for the /api/sovereign/payment/approve
 // HTTP route in api/index.go. It delegates to the Pi Platform client and is
 // intentionally lazy-initialized so test setups that do not exercise the Pi
-// flow do not need to provision PI_API_KEY.
+// flow do not need to provision PI_API_KEY. The caller's ctx is forwarded to
+// the outbound HTTP call so request cancellations and deadlines are honored.
 func (s *SovereignServer) ApprovePiPayment(ctx context.Context, paymentID string) error {
 	client := finance.NewPiPlatformClient()
-	return client.ApprovePayment(paymentID)
+	return client.ApprovePayment(ctx, paymentID)
 }
 
 // CompletePiPayment mirrors ApprovePiPayment for the /api/sovereign/payment/complete
 // HTTP route. The Pi Platform requires both the payment ID and the on-chain txid.
+// The caller's ctx is forwarded to the outbound HTTP call.
 func (s *SovereignServer) CompletePiPayment(ctx context.Context, paymentID, txID string) error {
 	client := finance.NewPiPlatformClient()
-	return client.CompletePayment(paymentID, txID)
+	return client.CompletePayment(ctx, paymentID, txID)
 }
 
 func (s *SovereignServer) QueryMemory(ctx context.Context, req *pb.MemoryQuery) (*pb.MemoryList, error) {
 	if req == nil {
 		return nil, fmt.Errorf("nil MemoryQuery")
 	}
+	if s.Memory == nil {
+		return nil, fmt.Errorf("memory store not initialized")
+	}
 	results := s.Memory.Query(req.Topic, req.AgentId)
 
 	insights := make([]*pb.MemoryInsight, 0, len(results))
 	for _, res := range results {
+		// StoreMemory writes req.DataJson (a string) into res.Data,
+		// so the value is normally a string. A checked assertion lets
+		// us pass it through verbatim when it is and gracefully fall
+		// back to fmt.Sprintf when something else slipped in via an
+		// older code path, rather than panicking via res.Data.(string).
+		var dataJSON string
+		if s, ok := res.Data.(string); ok {
+			dataJSON = s
+		} else if res.Data != nil {
+			dataJSON = fmt.Sprintf("%v", res.Data)
+		}
 		insights = append(insights, &pb.MemoryInsight{
 			Id:        res.ID,
 			AgentId:   res.AgentID,
 			Topic:     res.Topic,
-			DataJson:  fmt.Sprintf("%v", res.Data),
+			DataJson:  dataJSON,
 			Signature: res.Signature,
 			Timestamp: res.Timestamp,
 		})

@@ -92,8 +92,11 @@ func (lc *LedgerConnector) VerifyPiTransaction(paymentID string, expectedReceive
 		return false, "", fmt.Errorf("REPLAY_ATTACK_DETECTED: %s", paymentID)
 	}
 
-	// 2. Fetch official payment state from Pi Servers
-	payment, err := lc.PlatformClient.GetPayment(paymentID)
+	// 2. Fetch official payment state from Pi Servers.
+	// TODO: thread a real ctx through VerifyPiTransaction's caller chain
+	// once the surrounding API is settled; context.Background() preserves
+	// the prior fire-and-forget behavior for now.
+	payment, err := lc.PlatformClient.GetPayment(context.Background(), paymentID)
 	if err != nil {
 		return false, "", fmt.Errorf("platform verification failed: %v", err)
 	}
