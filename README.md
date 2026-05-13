@@ -1,3 +1,35 @@
+<!-- ════════════════ AIX SOVEREIGN STACK · UNIFIED BRANDING ════════════════ -->
+
+<div align="center">
+  <img src="./assets/aix-stack-header-v2.svg" alt="The AIX Sovereign Stack. Echo369. L0 Root Authority. L1 Protocol. L2 Runtime. L3 Marketplace. L4-L6 Satellites" width="100%"/>
+</div>
+
+<div align="center">
+
+[![AIX Stack](https://img.shields.io/badge/AIX%20STACK-Echo369-39FF14?style=for-the-badge&labelColor=050505)](https://github.com/Moeabdelaziz007/aix-format/blob/main/AXIOM.md)
+[![Spec](https://img.shields.io/badge/SPEC-AIX%2F1.0-39FF14?style=for-the-badge&labelColor=050505)](https://github.com/Moeabdelaziz007/aix-format/blob/main/AXIOM.md)
+[![Layer](https://img.shields.io/badge/LAYER-L5%20%C2%B7%20SATELLITE%20PI-39FF14?style=for-the-badge&labelColor=050505)](https://github.com/Moeabdelaziz007/PiWorker-OS)
+[![Version](https://img.shields.io/badge/version-v2.0.0-39FF14?style=for-the-badge&labelColor=050505)](./package.json)
+[![License](https://img.shields.io/badge/LICENSE-MIT-39FF14?style=for-the-badge&labelColor=050505)](./LICENSE)
+
+</div>
+
+<div align="center">
+
+**Satellite Layer** &nbsp;.&nbsp; [**↑ L0 `axiomid-project`**](https://github.com/Moeabdelaziz007/axiomid-project) &nbsp;.&nbsp; Sovereign Core: [**L1 `aix-format`**](https://github.com/Moeabdelaziz007/aix-format) &nbsp;.&nbsp; [**L2 `iqra`**](https://github.com/Moeabdelaziz007/iqra) &nbsp;.&nbsp; [**L3 `aix-agent-skills`**](https://github.com/Moeabdelaziz007/aix-agent-skills) &nbsp;.&nbsp; **π L5 . `PiWorker-OS` . YOU ARE HERE**
+
+</div>
+
+<div align="center">
+
+<sub>Sibling satellites: [**L4 `AlphaAxiom`**](https://github.com/Moeabdelaziz007/AlphaAxiom) &nbsp;.&nbsp; [**L6 `GemClaw`**](https://github.com/Moeabdelaziz007/GemClaw) &nbsp;.&nbsp; PiWorker-OS buys Pi-flavoured skills from L3 and anchors KYC via L0</sub>
+
+</div>
+
+<br/>
+
+<!-- ════════════════ /AIX SOVEREIGN STACK ════════════════ -->
+
 # 🌌 PiWorker-OS — نظام الوكلاء السيادي | The Sovereign Agent OS
 
 <div align="center">
@@ -8,6 +40,12 @@
 <img src="https://img.shields.io/badge/AI-Gemini%201.5%20Pro-4285F4?style=for-the-badge&logo=google-gemini&logoColor=white" alt="Gemini"/>
 <img src="https://img.shields.io/badge/Language-TypeScript%2062%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
 <img src="https://img.shields.io/badge/Backend-Go%2026%25-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go"/>
+
+</div>
+
+<div align="center">
+
+[![Sovereign AI Stack · 1 Human + 12 AI Agents across 5 projects](https://img.shields.io/badge/SOVEREIGN%20AI%20STACK-1%20Human%20%2B%2012%20AI%20Agents%20across%205%20projects-39FF14?style=for-the-badge&labelColor=050505&logo=github&logoColor=39FF14)](https://github.com/Moeabdelaziz007#07-architects--ai-collaborators--المعماريون-والمتعاونون-الذكيون)
 
 </div>
 
@@ -333,9 +371,71 @@ npm run forge
 | **AI Oracle** | Google Gemini 1.5 Pro (`@google/generative-ai`) |
 | **Finance** | Pi Network SDK, Soroban Bridge, Upstash Redis |
 | **Validation** | Zod, JSON Schema |
-| **Deployment** | Vercel (frontend), Docker (sidecar engine) |
+| **Deployment** | Docker (sidecar engine) |
 | **Testing** | Playwright E2E |
 | **CI/CD** | GitHub Actions, Husky, lint-staged |
+
+---
+
+## 🤝 Built by 1 Human + 5 AI Agents
+
+PiWorker-OS is the **Twin OS** of the [**Sovereign AI Stack**](https://github.com/Moeabdelaziz007#07-architects--ai-collaborators--المعماريون-والمتعاونون-الذكيون): 5 sovereign projects engineered by **1 human and 12 AI agents** in total. PiWorker alone carries the fingerprints of **5 of those 12 agents**: 2 coding agents and 3 review/debug agents, derived from commit history (direct authors, `Co-authored-by` trailers, and review-attribution commit subjects like `Address CodeRabbit Major findings on PR #35` and `Codex P1`).
+
+### 🏛️ Architect
+<div align="center">
+<table>
+<tr>
+<td align="center" width="200" valign="top">
+  <a href="https://github.com/Moeabdelaziz007"><img src="https://github.com/Moeabdelaziz007.png" width="80" style="border-radius:50%;"/></a>
+  <br/><br/><b>Mohamed Abdelaziz</b><br/>
+  <sub>🏛️ Sovereign Architect</sub>
+</td>
+</tr>
+</table>
+</div>
+
+### 🔨 Coding Agents (2)
+<div align="center">
+<table>
+<tr>
+<td align="center" width="200" valign="top">
+  <a href="https://blacksmith.sh"><img src="https://img.shields.io/badge/AI-Codesmith-ff6b35?style=for-the-badge&logo=githubactions&logoColor=white" height="36"/></a>
+  <br/><br/><b>Codesmith</b><br/>
+  <sub>Blacksmith · CI · Autofix · PRs</sub>
+</td>
+<td align="center" width="200" valign="top">
+  <a href="https://jules.google"><img src="https://img.shields.io/badge/AI-Jules-10b981?style=for-the-badge&logo=googlecloud&logoColor=white" height="36"/></a>
+  <br/><br/><b>Jules</b><br/>
+  <sub>Google Antigravity · Async builder</sub>
+</td>
+</tr>
+</table>
+</div>
+
+### 🔍 Review &amp; Debug Agents (3)
+<div align="center">
+<table>
+<tr>
+<td align="center" width="200" valign="top">
+  <a href="https://coderabbit.ai"><img src="https://img.shields.io/badge/AI-CodeRabbit-7c3aed?style=for-the-badge&logo=githubactions&logoColor=white" height="36"/></a>
+  <br/><br/><b>CodeRabbit</b><br/>
+  <sub>Major findings on PR #35</sub>
+</td>
+<td align="center" width="200" valign="top">
+  <a href="https://openai.com/codex"><img src="https://img.shields.io/badge/AI-Codex-10a37f?style=for-the-badge&logo=openai&logoColor=white" height="36"/></a>
+  <br/><br/><b>Codex</b><br/>
+  <sub>OpenAI · P1 QueryMemory fix</sub>
+</td>
+<td align="center" width="200" valign="top">
+  <a href="https://developers.google.com/gemini-code-assist"><img src="https://img.shields.io/badge/AI-Gemini_1.5_Pro-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white" height="36"/></a>
+  <br/><br/><b>Gemini 1.5 Pro</b><br/>
+  <sub>AI Oracle · Pre-fix review pass</sub>
+</td>
+</tr>
+</table>
+</div>
+
+> See the full [12-agent roster on the profile README →](https://github.com/Moeabdelaziz007#07-architects--ai-collaborators--المعماريون-والمتعاونون-الذكيون)
 
 ---
 
@@ -344,3 +444,25 @@ npm run forge
   <br/>
   <sub><i>Technical Sovereignty is the foundation of the Agentic Future.</i></sub>
 </div>
+
+<!-- ════════════════ AIX SOVEREIGN STACK . FOOTER ════════════════ -->
+
+---
+
+<div align="center">
+
+[**↑ L0 `axiomid-project`**](https://github.com/Moeabdelaziz007/axiomid-project) &nbsp;.&nbsp; [**L1 `aix-format`**](https://github.com/Moeabdelaziz007/aix-format) &nbsp;.&nbsp; [**L2 `iqra`**](https://github.com/Moeabdelaziz007/iqra) &nbsp;.&nbsp; [**L3 `aix-agent-skills`**](https://github.com/Moeabdelaziz007/aix-agent-skills) &nbsp;.&nbsp; **π L5 . `PiWorker-OS` . YOU ARE HERE**
+
+</div>
+
+<div align="center">
+
+<sub>Sibling satellites: [**L4 `AlphaAxiom`**](https://github.com/Moeabdelaziz007/AlphaAxiom) &nbsp;.&nbsp; [**L6 `GemClaw`**](https://github.com/Moeabdelaziz007/GemClaw)</sub>
+
+</div>
+
+<div align="center">
+  <img src="./assets/aix-footer-quote-v2.svg" alt="AIX Stack. Echo369. King is not Born, he is Made." width="100%"/>
+</div>
+
+<!-- ════════════════ /AIX SOVEREIGN STACK . FOOTER ════════════════ -->
