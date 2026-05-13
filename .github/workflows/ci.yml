@@ -83,7 +83,7 @@ jobs:
       - name: Artifact sanity checks
         run: |
           test -s bin/piworker-cli
-          test -d .next
+          test -s bin/sovereign-engine
           test -f sidecar/sovereign-engine/Dockerfile
 
       - name: Validate deploy secrets/config
@@ -128,13 +128,12 @@ jobs:
           # Release Checklist
 
           ## Passing test matrix
-          - ✅ Node typecheck
-          - ✅ Node build
-          - ✅ Go build (CLI + sovereign engine)
-          - ✅ Security scans (Secretlint + Trivy)
-          - ✅ Targeted Performance SLO Profiling
-          - ✅ Contract Sync Validation
-          - ✅ Artifact sanity checks
+          - Node typecheck
+          - Go build (CLI + sovereign engine)
+          - Security scans (Secretlint + Trivy)
+          - Targeted Performance SLO Profiling
+          - Contract Sync Validation
+          - Artifact sanity checks
 
           ## Secret/config validation result
           - Verdict: ${{ steps.validate_config.outputs.verdict }}
