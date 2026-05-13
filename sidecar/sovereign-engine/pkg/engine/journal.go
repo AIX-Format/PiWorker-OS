@@ -1,6 +1,8 @@
 package engine
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"log"
 	"os"
@@ -77,6 +79,13 @@ func (j *SovereignJournal) Fail(id, ns, reason string) error {
 // must use this instead of Replay() to avoid operating on pre-filtered
 // state. Replay() itself keys only by ID, which silently undercounts
 // when the same ID exists across namespaces.
+//
+// The on-disk format is NDJSON: one JournalEntry per line. We parse it
+// with bufio.Scanner + json.Unmarshal rather than json.Decoder.More(),
+// because Decoder.More() is documented only for iterating inside an
+// array/object and does not reliably resynchronize after a malformed
+// record. Per-line parsing lets us skip one corrupted entry and keep
+// going, which matches the "skip corrupted entry" log line below.
 func (j *SovereignJournal) readAllEntries() ([]JournalEntry, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
@@ -91,14 +100,24 @@ func (j *SovereignJournal) readAllEntries() ([]JournalEntry, error) {
 	defer f.Close()
 
 	var entries []JournalEntry
-	decoder := json.NewDecoder(f)
-	for decoder.More() {
+	scanner := bufio.NewScanner(f)
+	// Allow up to 1 MiB per journal line (default is 64 KiB which is
+	// fine for typical records but can truncate large Data payloads).
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
+			continue
+		}
 		var entry JournalEntry
-		if err := decoder.Decode(&entry); err != nil {
+		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Printf("⚠️ [Journal] Skipping corrupted entry: %v", err)
 			continue
 		}
 		entries = append(entries, entry)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 	return entries, nil
 }
@@ -150,14 +169,22 @@ func (j *SovereignJournal) Replay() ([]JournalEntry, error) {
 	defer f.Close()
 
 	var entries []JournalEntry
-	decoder := json.NewDecoder(f)
-	for decoder.More() {
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
+			continue
+		}
 		var entry JournalEntry
-		if err := decoder.Decode(&entry); err != nil {
+		if err := json.Unmarshal(line, &entry); err != nil {
 			log.Printf("⚠️ [Journal] Skipping corrupted entry: %v", err)
 			continue
 		}
 		entries = append(entries, entry)
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, err
 	}
 
 	// Filter for unfinished intents

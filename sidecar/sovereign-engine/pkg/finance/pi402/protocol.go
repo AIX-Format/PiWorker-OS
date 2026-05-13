@@ -73,7 +73,10 @@ func (e *Pi402Engine) VerifyAgentSignature(agentID string, message []byte, signa
 		// signature.
 		return false
 	}
-	if len(wallet.PublicKey) == 0 {
+	// ed25519.Verify panics (not just returns false) when the public key
+	// length is anything other than ed25519.PublicKeySize (32 bytes), so
+	// reject every wrong-length key before dispatching the verification.
+	if len(wallet.PublicKey) != ed25519.PublicKeySize {
 		return false
 	}
 	return ed25519.Verify(wallet.PublicKey, message, signature)
