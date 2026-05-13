@@ -63,15 +63,38 @@ const (
 // component field on every record so downstream log routers can split
 // by source. Level is read from LOG_LEVEL (debug|info|warn|error),
 // defaulting to info.
+//
+// The handler renames slog's two default top-level keys (`time` and
+// `msg`) back to `timestamp` and `message` so the wire format matches
+// the legacy hand-rolled bridgeLog struct byte-for-byte. Downstream
+// dashboards and alerts that key on the old names keep working.
 func New(component string, w io.Writer) *slog.Logger {
 	if w == nil {
 		w = os.Stderr
 	}
 	level := parseLevel(os.Getenv("LOG_LEVEL"))
 	handler := slog.NewJSONHandler(w, &slog.HandlerOptions{
-		Level: level,
+		Level:       level,
+		ReplaceAttr: renameDefaultKeys,
 	})
 	return slog.New(handler).With(FieldComponent, component)
+}
+
+// renameDefaultKeys maps slog's default top-level keys to the names
+// that the previous bridgeLog struct used. Only the top-level group
+// is touched (groups == nil) so attribute keys inside grouped logs
+// are left alone.
+func renameDefaultKeys(groups []string, a slog.Attr) slog.Attr {
+	if len(groups) > 0 {
+		return a
+	}
+	switch a.Key {
+	case slog.TimeKey:
+		a.Key = "timestamp"
+	case slog.MessageKey:
+		a.Key = "message"
+	}
+	return a
 }
 
 func parseLevel(s string) slog.Level {
@@ -123,16 +146,22 @@ func FromContext(ctx context.Context) (requestID, correlationID, authContext str
 // Op emits an INFO record describing an operation. ErrorCode is left
 // empty for success paths; pass a non-empty value (AUTH, VALIDATION,
 // DEPENDENCY, BUILD, NETWORK) to flag a failure path. The shape of the
-// resulting JSON matches the legacy bridgeLog struct one-for-one.
+// resulting JSON matches the legacy bridgeLog struct one-for-one,
+// including the `omitempty` semantics on error_code: success records
+// emit no error_code key at all so log routers that key on its
+// presence as a failure signal stay consistent with the old behavior.
 func Op(ctx context.Context, logger *slog.Logger, operation, errorCode, message string) {
 	requestID, correlationID, authContext := FromContext(ctx)
-	logger.LogAttrs(ctx, levelFor(errorCode), message,
+	attrs := []slog.Attr{
 		slog.String(FieldOperation, operation),
 		slog.String(FieldAuthContext, authContext),
 		slog.String(FieldRequestID, requestID),
 		slog.String(FieldCorrelationID, correlationID),
-		slog.String(FieldErrorCode, errorCode),
-	)
+	}
+	if errorCode != "" {
+		attrs = append(attrs, slog.String(FieldErrorCode, errorCode))
+	}
+	logger.LogAttrs(ctx, levelFor(errorCode), message, attrs...)
 }
 
 // levelFor maps an error_code string to a slog level so failure paths

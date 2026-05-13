@@ -39,9 +39,47 @@ func TestOpEmitsCanonicalFields(t *testing.T) {
 	assertEqual(FieldAuthContext, "SOVEREIGN_TOKEN")
 	assertEqual(FieldRequestID, "req-123")
 	assertEqual(FieldCorrelationID, "corr-456")
-	assertEqual(FieldErrorCode, "")
-	assertEqual("msg", "approve received")
+	// Wire-compat: the legacy bridgeLog struct used `timestamp` and
+	// `message` (not slog's defaults `time` and `msg`). Assert the
+	// renames stick.
+	assertEqual("message", "approve received")
 	assertEqual("level", "INFO")
+	if _, ok := record["timestamp"]; !ok {
+		t.Errorf("expected 'timestamp' key, got keys: %v", keysOf(record))
+	}
+	if _, ok := record["time"]; ok {
+		t.Errorf("'time' key leaked through; expected rename to 'timestamp'. keys: %v", keysOf(record))
+	}
+	if _, ok := record["msg"]; ok {
+		t.Errorf("'msg' key leaked through; expected rename to 'message'. keys: %v", keysOf(record))
+	}
+	// Wire-compat: error_code had `omitempty` on the old struct, so
+	// success records must NOT emit the key at all.
+	if _, ok := record[FieldErrorCode]; ok {
+		t.Errorf("expected error_code to be omitted on success, got %v", record[FieldErrorCode])
+	}
+}
+
+func TestOpKeepsErrorCodeOnFailure(t *testing.T) {
+	// The complement of the omitempty rule: when error_code IS set,
+	// it must appear on the wire so failure paths still surface.
+	var buf bytes.Buffer
+	logger := New(ComponentAPIBridge, &buf)
+
+	Op(context.Background(), logger, "payment", "DEPENDENCY", "downstream timeout")
+
+	record := decodeLine(t, bytes.TrimSpace(buf.Bytes()))
+	if got := record[FieldErrorCode]; got != "DEPENDENCY" {
+		t.Errorf("error_code on failure: got %v, want %q", got, "DEPENDENCY")
+	}
+}
+
+func keysOf(m map[string]any) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
 }
 
 func TestOpLevelFollowsErrorCode(t *testing.T) {
