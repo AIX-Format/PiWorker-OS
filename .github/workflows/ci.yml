@@ -151,6 +151,54 @@ jobs:
           path: release-checklist.md
           if-no-files-found: error
 
+  e2e-real:
+    name: e2e-real
+    runs-on: ubuntu-latest
+    needs: build
+    if: ${{ secrets.SOVEREIGN_ENGINE_URL != '' && secrets.SOVEREIGN_AUTH_TOKEN != '' && secrets.AGENT_SYSTEM_SECRET != '' }}
+    env:
+      SOVEREIGN_ENGINE_URL: ${{ secrets.SOVEREIGN_ENGINE_URL }}
+      SOVEREIGN_AUTH_TOKEN: ${{ secrets.SOVEREIGN_AUTH_TOKEN }}
+      AGENT_SYSTEM_SECRET: ${{ secrets.AGENT_SYSTEM_SECRET }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22.x"
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+
+      - name: Run real E2E suite
+        run: node --test tests/e2e/sovereign-critical-path.e2e.test.mjs
+
+      - name: Upload E2E artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-real-artifacts-${{ github.run_id }}
+          path: tests/e2e/artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  gate-critical-merge:
+    name: gate-critical-merge
+    runs-on: ubuntu-latest
+    needs: e2e-real
+    if: always() && (github.base_ref == 'main' || github.ref == 'refs/heads/main')
+    steps:
+      - name: Enforce critical-branch merge gate
+        run: |
+          result="${{ needs.e2e-real.result }}"
+          if [ "$result" = "failure" ] || [ "$result" = "cancelled" ]; then
+            echo "Blocking merge: e2e-real ended with '${result}'."
+            exit 1
+          fi
+          echo "Gate passed with e2e-real result: ${result}."
+
   # Tiered Test Gates (T1-T4) job removed: the test:tier1..tier4 and
   # playwright:install:chromium npm scripts never existed in package.json
   # so the job only passed when it was skipped behind a failing build.
