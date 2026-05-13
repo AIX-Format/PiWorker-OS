@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -73,19 +74,51 @@ func (j *SovereignJournal) Fail(id, ns, reason string) error {
 	return j.log(JournalEntry{ID: id, Type: "FAIL", Namespace: ns, Data: map[string]string{"reason": reason}})
 }
 
+// decodeNDJSON reads an NDJSON file one entry per line. The journal
+// uses NDJSON: one JournalEntry per line, separated by '\n'.
+//
+// We use bufio.Reader.ReadBytes('\n') rather than bufio.Scanner because
+// Scanner stops unrecoverably with ErrTooLong on any single line that
+// exceeds its buffer cap, and the same Scanner cannot then be used to
+// continue past the oversized record. A journal with one huge Data
+// payload would lose every entry after it. bufio.Reader handles
+// arbitrarily long lines and lets us skip individual malformed records
+// while continuing the scan.
+//
+// We also do NOT use json.Decoder.More() because Decoder.More is
+// documented only for iterating inside an array/object and does not
+// reliably resynchronize after a malformed record on top-level streams.
+func decodeNDJSON(r io.Reader) ([]JournalEntry, error) {
+	var entries []JournalEntry
+	reader := bufio.NewReader(r)
+	for {
+		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 {
+			trimmed := bytes.TrimSpace(line)
+			if len(trimmed) > 0 {
+				var entry JournalEntry
+				if jsonErr := json.Unmarshal(trimmed, &entry); jsonErr != nil {
+					log.Printf("⚠️ [Journal] Skipping corrupted entry: %v", jsonErr)
+				} else {
+					entries = append(entries, entry)
+				}
+			}
+		}
+		if err == io.EOF {
+			return entries, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+}
+
 // readAllEntries decodes every JournalEntry from the underlying file
 // without applying the Replay() filter that collapses BEGIN+COMMIT/FAIL
 // pairs. Callers that want raw history (counts, audits, drift checks)
 // must use this instead of Replay() to avoid operating on pre-filtered
 // state. Replay() itself keys only by ID, which silently undercounts
 // when the same ID exists across namespaces.
-//
-// The on-disk format is NDJSON: one JournalEntry per line. We parse it
-// with bufio.Scanner + json.Unmarshal rather than json.Decoder.More(),
-// because Decoder.More() is documented only for iterating inside an
-// array/object and does not reliably resynchronize after a malformed
-// record. Per-line parsing lets us skip one corrupted entry and keep
-// going, which matches the "skip corrupted entry" log line below.
 func (j *SovereignJournal) readAllEntries() ([]JournalEntry, error) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
@@ -98,28 +131,7 @@ func (j *SovereignJournal) readAllEntries() ([]JournalEntry, error) {
 		return nil, err
 	}
 	defer f.Close()
-
-	var entries []JournalEntry
-	scanner := bufio.NewScanner(f)
-	// Allow up to 1 MiB per journal line (default is 64 KiB which is
-	// fine for typical records but can truncate large Data payloads).
-	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
-		}
-		var entry JournalEntry
-		if err := json.Unmarshal(line, &entry); err != nil {
-			log.Printf("⚠️ [Journal] Skipping corrupted entry: %v", err)
-			continue
-		}
-		entries = append(entries, entry)
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-	return entries, nil
+	return decodeNDJSON(f)
 }
 
 // GetActiveCount returns the number of intents currently in flight,
@@ -168,22 +180,8 @@ func (j *SovereignJournal) Replay() ([]JournalEntry, error) {
 	}
 	defer f.Close()
 
-	var entries []JournalEntry
-	scanner := bufio.NewScanner(f)
-	scanner.Buffer(make([]byte, 64*1024), 1024*1024)
-	for scanner.Scan() {
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
-		}
-		var entry JournalEntry
-		if err := json.Unmarshal(line, &entry); err != nil {
-			log.Printf("⚠️ [Journal] Skipping corrupted entry: %v", err)
-			continue
-		}
-		entries = append(entries, entry)
-	}
-	if err := scanner.Err(); err != nil {
+	entries, err := decodeNDJSON(f)
+	if err != nil {
 		return nil, err
 	}
 
