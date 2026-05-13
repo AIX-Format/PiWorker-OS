@@ -443,6 +443,7 @@ func (s *SovereignServer) QueryMemory(ctx context.Context, req *pb.MemoryQuery) 
 			DataJson:  dataJSON,
 			Signature: res.Signature,
 			Timestamp: res.Timestamp,
+			Relevance: res.Relevance,
 		})
 	}
 	return &pb.MemoryList{Insights: insights}, nil
