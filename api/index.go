@@ -32,7 +32,12 @@ func init() {
 	var err error
 	srv, err = server.NewSovereignServer(nil)
 	if err != nil {
+		// Fail fast: a nil srv would surface later as a NPE on the
+		// first request, which is far harder to debug than a clean
+		// startup error. Emit the structured record before os.Exit
+		// so log routers see it.
 		logger.Error("failed to init Sovereign Server", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	expectedAuthToken, err = resolveAuthToken()

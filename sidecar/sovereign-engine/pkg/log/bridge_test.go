@@ -103,3 +103,35 @@ func TestParseLevelDefaultsToInfo(t *testing.T) {
 		t.Errorf("debug record should pass when LOG_LEVEL=debug: %s", buf.String())
 	}
 }
+
+func TestParseLevelNormalizesInput(t *testing.T) {
+	// Operators routinely set LOG_LEVEL with stray whitespace or
+	// mixed case; we must accept those rather than silently falling
+	// back to INFO and hiding DEBUG records.
+	cases := []struct {
+		envValue   string
+		debugVisible bool
+	}{
+		{"debug", true},
+		{"DEBUG", true},
+		{"  debug  ", true},
+		{"Debug", true},
+		{" Warning ", false}, // maps to WARN, debug still filtered
+		{"WARN", false},
+		{"ERROR", false},
+		{"garbage", false}, // unknown -> INFO, debug filtered
+	}
+	for _, tc := range cases {
+		t.Run("env="+tc.envValue, func(t *testing.T) {
+			t.Setenv("LOG_LEVEL", tc.envValue)
+			var buf bytes.Buffer
+			logger := New(ComponentAPIBridge, &buf)
+			logger.Debug("debug record")
+			gotVisible := strings.Contains(buf.String(), "debug record")
+			if gotVisible != tc.debugVisible {
+				t.Errorf("LOG_LEVEL=%q: debug visible=%v, want %v (buf=%q)",
+					tc.envValue, gotVisible, tc.debugVisible, buf.String())
+			}
+		})
+	}
+}

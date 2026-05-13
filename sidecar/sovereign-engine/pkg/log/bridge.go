@@ -24,6 +24,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
+	"strings"
 )
 
 // Field names match the bridgeLog struct that existed in api/index.go
@@ -74,12 +75,15 @@ func New(component string, w io.Writer) *slog.Logger {
 }
 
 func parseLevel(s string) slog.Level {
-	switch s {
-	case "debug", "DEBUG":
+	// Normalize so common operator typos (" Warning ", "Debug", "INFO")
+	// all map to the expected level instead of silently falling back
+	// to INFO and hiding DEBUG records.
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "debug":
 		return slog.LevelDebug
-	case "warn", "WARN", "warning":
+	case "warn", "warning":
 		return slog.LevelWarn
-	case "error", "ERROR":
+	case "error":
 		return slog.LevelError
 	default:
 		return slog.LevelInfo
