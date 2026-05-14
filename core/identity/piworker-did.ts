@@ -10,7 +10,7 @@ export class PiWorkerDID {
    */
   static generate(agentName: string) {
     const uuid = crypto.randomUUID();
-    const did = `did:piworker:${uuid}`;
+    const did = `did:axiom:axiomid.app:${uuid}`;
     
     // Create the Sovereign Passport (JSON-LD)
     const passport = {
@@ -31,7 +31,7 @@ export class PiWorkerDID {
         "serviceEndpoint": "local://piworker-os/vortex"
       }],
       "metadata": {
-        "citizenship": "PiWorker-OS",
+        "citizenship": "Axiom Sovereign Stack",
         "issuedAt": new Date().toISOString(),
         "sovereigntyLevel": "1.0"
       }
