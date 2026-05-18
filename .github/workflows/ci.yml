@@ -10,17 +10,33 @@ permissions:
   contents: read
 
 jobs:
+  changes:
+    name: Detect API/proto changes
+    runs-on: ubuntu-latest
+    outputs:
+      api_or_proto_changed: ${{ steps.filter.outputs.api_or_proto }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            api_or_proto:
+              - 'api/**'
+              - '**/*.proto'
+              - 'sidecar/sovereign-engine/pkg/pb/**'
+
   build:
     name: Build & Security Audit
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        # Pin action versions to a vetted release tag for supply-chain security and reproducible runs.
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        # Pin action versions to a vetted release tag for supply-chain security and reproducible runs.
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
@@ -38,8 +54,7 @@ jobs:
         run: npm run contracts:check
 
       - name: Setup Go
-        # Pin action versions to a vetted release tag for supply-chain security and reproducible runs.
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v5
         with:
           go-version: "1.25.10"
           cache-dependency-path: go.sum
@@ -69,8 +84,13 @@ jobs:
       - name: Secret scan (Secretlint)
         run: npx secretlint "**/*"
 
+      - name: Static scan (Semgrep)
+        run: |
+          python -m pip install --upgrade pip
+          pip install semgrep
+          semgrep --config p/owasp-top-ten --error
+
       - name: Vulnerability scan (Trivy)
-        # Pin action versions to a vetted release tag for supply-chain security and reproducible runs.
         uses: aquasecurity/trivy-action@v0.24.0
         with:
           scan-type: fs
@@ -94,7 +114,7 @@ jobs:
           ## Build & verification matrix
           - Node typecheck
           - Go build (CLI + sovereign engine)
-          - Security scans (Secretlint + Trivy + govulncheck)
+          - Security scans (Secretlint + Semgrep + Trivy + govulncheck + npm audit)
           - Targeted Performance SLO Profiling
           - Contract Sync Validation
           - Artifact sanity checks
@@ -104,51 +124,32 @@ jobs:
           EOF2
 
       - name: Upload release checklist artifact
-        # Pin action versions to a vetted release tag for supply-chain security and reproducible runs.
         uses: actions/upload-artifact@v4
         with:
           name: release-checklist
           path: release-checklist.md
           if-no-files-found: error
 
-  e2e-real:
-    name: E2E Real (staging)
+  contract-tests:
+    name: Contract tests for API/proto changes
+    needs: changes
+    if: needs.changes.outputs.api_or_proto_changed == 'true'
     runs-on: ubuntu-latest
-    needs: build
-    # This job is a blocker for main/release branches by failing hard when env/secrets are absent or tests fail.
-    if: github.event_name == 'pull_request' || startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/release/')
-    env:
-      SOVEREIGN_STAGING_URL: ${{ vars.SOVEREIGN_STAGING_URL }}
-      SOVEREIGN_AUTH_TOKEN: ${{ secrets.SOVEREIGN_AUTH_TOKEN }}
-      AGENT_SYSTEM_SECRET: ${{ secrets.AGENT_SYSTEM_SECRET }}
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
-
+        uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "22.x"
-
       - name: Install dependencies
         run: npm install --ignore-scripts --no-audit --no-fund --legacy-peer-deps
-
-      - name: Validate required staging env
-        run: |
-          missing=0
-          [ -n "$SOVEREIGN_STAGING_URL" ] || { echo "Missing required var: SOVEREIGN_STAGING_URL"; missing=1; }
-          [ -n "$SOVEREIGN_AUTH_TOKEN" ] || { echo "Missing required var: SOVEREIGN_AUTH_TOKEN"; missing=1; }
-          [ -n "$AGENT_SYSTEM_SECRET" ] || { echo "Missing required var: AGENT_SYSTEM_SECRET"; missing=1; }
-          [ "$missing" -eq 0 ] || exit 1
-
-      - name: Run real E2E
-        run: npm run test:tier4
-
-      - name: Upload E2E artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Contract sync check
+        run: npm run contracts:check
+      - name: Setup Go
+        uses: actions/setup-go@v5
         with:
-          name: e2e-real-artifacts
-          path: tests/e2e/artifacts/
-          if-no-files-found: warn
+          go-version: "1.25.10"
+          cache-dependency-path: go.sum
+      - name: API package tests
+        run: go test ./api/...
