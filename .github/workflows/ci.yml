@@ -54,7 +54,7 @@ jobs:
         run: npm run contracts:check
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25.10"
           cache-dependency-path: go.sum
@@ -147,7 +147,7 @@ jobs:
       - name: Contract sync check
         run: npm run contracts:check
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: "1.25.10"
           cache-dependency-path: go.sum
