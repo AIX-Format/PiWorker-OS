@@ -67,7 +67,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@secretlint/secretlint-rule-preset-recommend": "^12.2.0",
+    "@secretlint/secretlint-rule-preset-recommend": "^13.0.2",
     "@types/node": "^25",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.5",
